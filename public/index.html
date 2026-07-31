@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rate Card &amp; Award Check — Fuse Recruitment</title>
+<style>
+  :root{
+    --ink:#151A36;
+    --ink-2:#1F2547;
+    --paper:#FFFFFF;
+    --surface:#E6EFF3;
+    --card:#FFFFFF;
+    --line:#D6E4EA;
+    --muted:#55606E;
+    --spark:#009CDD;
+    --spark-2:#A2C8D8;
+    --spark-dark:#151A36;
+    --good:#137A3F;
+    --good-bg:#EAF7EF;
+    --bad:#C41E3A;
+    --bad-bg:#FDECEC;
+    --warn-bg:#E6EFF3;
+    --warn-line:#A2C8D8;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--surface);
+    font-family:var(--sans);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:64px;
+  }
+  ::selection{ background:var(--spark-2); color:var(--ink); }
+
+  /* ---------- Header ---------- */
+  header.top{
+    background: var(--paper);
+    color:var(--ink);
+    padding:18px 16px 22px;
+    position:relative;
+    overflow:hidden;
+    border-bottom:4px solid var(--spark);
+  }
+  header.top::after{
+    content:"";
+    position:absolute; inset:0;
+    background: radial-gradient(circle at 92% -20%, rgba(0,156,221,0.10), transparent 46%);
+    pointer-events:none;
+  }
+  .brandrow{
+    display:flex; align-items:center; gap:9px; position:relative; z-index:1;
+  }
+  .wordmark{ flex:1 1 auto; }
+  .fy-badge{
+    flex:0 0 auto; font-size:10.5px; font-weight:800; color:var(--muted);
+    background:var(--surface); border:1px solid var(--line); border-radius:20px;
+    padding:4px 10px; white-space:nowrap;
+  }
+  .spark-mark{ flex:0 0 auto; display:block; }
+  .wordmark{
+    font-weight:800; font-size:18px; letter-spacing:-0.02em; line-height:1; color:var(--ink);
+  }
+  .wordmark small{
+    display:block; font-weight:700; font-size:10px; letter-spacing:0.13em;
+    text-transform:uppercase; color:var(--spark-dark); margin-top:4px;
+  }
+  h1.pagetitle{
+    position:relative; z-index:1;
+    font-size:20px; margin:16px 0 2px; letter-spacing:-0.01em; font-weight:800; color:var(--ink);
+  }
+  p.pagesub{
+    position:relative; z-index:1;
+    margin:0 0 16px; color:var(--muted); font-size:13px; line-height:1.5; max-width:46ch;
+  }
+  .sync-row{ position:relative; z-index:1; margin-bottom:12px; }
+  .sync-btn{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
+    border:1.5px solid var(--line); background:#fff; color:var(--ink);
+    font-weight:700; font-size:13px; font-family:var(--sans);
+    padding:11px; border-radius:10px; cursor:pointer;
+  }
+  .sync-btn:disabled{ opacity:0.6; cursor:default; }
+  .sync-icon{ flex:0 0 auto; }
+  .sync-icon.spin{ animation:sync-spin 0.9s linear infinite; }
+  @keyframes sync-spin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
+  .sync-status{ font-size:11px; color:var(--muted); text-align:center; margin-top:6px; }
+  .sync-status.ok{ color:var(--good); }
+  .sync-status.err{ color:var(--bad); }
+
+  .agency-field{
+    position:relative; z-index:1;
+    display:flex; align-items:center; gap:8px;
+    background:var(--surface);
+    border:1.5px solid var(--line);
+    border-radius:10px; padding:8px 12px;
+  }
+  .agency-field label{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); white-space:nowrap; font-weight:800; }
+  .agency-field input{
+    flex:1; background:transparent; border:none; color:var(--ink); font-size:14px;
+    font-weight:700; outline:none; min-width:0;
+  }
+  .agency-field input::placeholder{ color:#9AA6B2; font-weight:500; }
+
+  /* ---------- Tabs ---------- */
+  .tabbar{
+    display:flex; gap:6px; padding:12px 14px 0;
+    max-width:720px; margin:0 auto;
+  }
+  .tabbtn{
+    flex:1; border:none; cursor:pointer; padding:12px 10px;
+    background:var(--card); color:var(--muted); font-weight:700; font-size:13.5px;
+    border-radius:12px 12px 0 0; border:1px solid var(--line); border-bottom:none;
+    position:relative; top:1px; font-family:var(--sans);
+  }
+  .tabbtn.active{ color:var(--ink); background:var(--surface); }
+  .tabbtn .dot{
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:var(--spark); margin-right:6px; vertical-align:middle;
+  }
+
+  main{ max-width:720px; margin:0 auto; padding:0 14px 24px; }
+  .tabpanel{ display:none; }
+  .tabpanel.active{ display:block; }
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px; margin-top:14px;
+  }
+  .card h2{
+    font-size:13px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted);
+    margin:0 0 14px; font-weight:800;
+  }
+  .card h2 .num{ color:var(--ink); margin-right:6px; }
+
+  label.field-label{
+    display:block; font-size:12px; font-weight:700; color:var(--ink); margin:0 0 6px;
+  }
+  select, input[type=text], input[type=number]{
+    width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:10px;
+    font-size:15px; font-family:var(--sans); background:#fff; color:var(--ink);
+    appearance:none; -webkit-appearance:none;
+  }
+  select{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%235B6B7F'/></svg>");
+    background-repeat:no-repeat; background-position:right 14px center; padding-right:32px;
+  }
+  select:focus, input:focus{ outline:2px solid var(--spark); outline-offset:1px; border-color:var(--spark); }
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  .segmented{ display:flex; border:1.5px solid var(--line); border-radius:10px; overflow:hidden; }
+  .segmented button{
+    flex:1; border:none; background:#fff; padding:10px 8px; font-size:13.5px; font-weight:700;
+    color:var(--muted); cursor:pointer; font-family:var(--sans);
+  }
+  .segmented button.active{ background:var(--ink); color:#fff; }
+  .segmented button + button{ border-left:1.5px solid var(--line); }
+
+  .helper{ font-size:11.5px; color:var(--muted); margin-top:6px; line-height:1.4; }
+  .note-box{
+    background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:10px;
+    padding:10px 12px; font-size:12px; color:#7A4B12; margin-top:14px; line-height:1.5;
+  }
+
+  /* ---------- Margin fuse slider ---------- */
+  .margin-row{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
+  .margin-value{ font-family:var(--mono); font-size:24px; font-weight:700; color:var(--ink); }
+  .fuse-track-wrap{ position:relative; padding:10px 0 4px; }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; height:8px; border-radius:6px;
+    background:linear-gradient(90deg, var(--ink) 0%, var(--spark) 55%, var(--spark-2) 100%);
+    outline:none; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:24px; height:24px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff, var(--spark-2) 45%, var(--spark) 100%);
+    border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.35), 0 0 0 1px var(--spark);
+    cursor:grab;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:20px; height:20px; border-radius:50%; border:3px solid #fff;
+    background:radial-gradient(circle at 35% 30%, #fff, var(--spark-2) 45%, var(--spark) 100%);
+    box-shadow:0 1px 4px rgba(0,0,0,0.35), 0 0 0 1px var(--spark);
+  }
+  .fuse-ticks{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted); margin-top:4px; font-family:var(--mono); }
+  .margin-alert{
+    display:none; align-items:center; gap:8px; margin-top:12px; padding:10px 12px;
+    background:var(--bad-bg); border:1px solid #F3B6C0; border-radius:10px;
+    color:var(--bad); font-size:12.5px; font-weight:700; line-height:1.4;
+  }
+  .margin-alert.show{ display:flex; }
+  .margin-alert .ico{ flex:0 0 auto; }
+
+  /* ---------- Cost / Charge readout ---------- */
+  .readout-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+  .readout{
+    border-radius:12px; padding:14px 12px; text-align:left;
+  }
+  .readout.cost{ background:#F4F6F9; border:1px solid var(--line); }
+  .readout.charge{ background:var(--ink); color:#fff; }
+  .readout .rlabel{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; font-weight:800; opacity:0.7; }
+  .readout.cost .rlabel{ color:var(--muted); }
+  .readout.charge .rlabel{ color:var(--spark-2); opacity:1; }
+  .readout .rvalue{ font-family:var(--mono); font-size:21px; font-weight:700; margin-top:4px; letter-spacing:-0.02em; }
+  .readout .rsub{ font-size:10.5px; margin-top:3px; opacity:0.65; }
+
+  .oncost-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .oncost-chip{
+    background:#F4F6F9; border:1px solid var(--line); border-radius:20px;
+    padding:5px 11px; font-size:11px; font-weight:700; color:var(--muted);
+    font-family:var(--mono);
+  }
+  .breakdown-list{ margin-top:16px; border-top:1px solid var(--line); }
+  .breakdown-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 0; border-bottom:1px solid var(--line); font-size:12.5px; color:var(--muted);
+  }
+  .breakdown-row .amt{ font-family:var(--mono); font-weight:700; color:var(--ink); }
+  .breakdown-row.total{ border-bottom:none; padding-top:11px; }
+  .breakdown-row.total span:first-child{ font-weight:700; color:var(--ink); }
+  .breakdown-row.total .amt{ color:var(--good); font-size:14px; }
+
+  /* ---------- Penalty table ---------- */
+  table.penalty{ width:100%; border-collapse:collapse; margin-top:4px; }
+  table.penalty th, table.penalty td{
+    text-align:left; padding:9px 6px; font-size:12.5px; border-bottom:1px solid var(--line);
+  }
+  table.penalty th{
+    color:var(--muted); font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; font-weight:800;
+  }
+  table.penalty td.num{ font-family:var(--mono); font-weight:700; text-align:right; }
+  table.penalty tr:last-child td{ border-bottom:none; }
+
+  /* ---------- Quote card ---------- */
+  .quote-card{
+    background:linear-gradient(160deg, var(--ink) 0%, var(--ink-2) 100%);
+    color:#fff; border-radius:16px; padding:20px; margin-top:14px; position:relative; overflow:hidden;
+  }
+  .quote-card::before{
+    content:""; position:absolute; width:220px; height:220px; border-radius:50%;
+    background:radial-gradient(circle, rgba(0,156,221,0.35), transparent 70%);
+    top:-90px; right:-70px;
+  }
+  .quote-top{ display:flex; justify-content:space-between; align-items:flex-start; position:relative; z-index:1; }
+  .quote-top .lbl{ font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#9FB0C6; font-weight:800; }
+  .quote-top .val{ font-weight:800; font-size:14.5px; margin-top:2px; }
+  .qdate{ font-size:10.5px; color:#8FA1B8; margin-top:4px; }
+  button.ghost-btn-onquote{
+    width:100%; margin-top:14px; border:1.5px solid rgba(255,255,255,0.28); cursor:pointer; border-radius:10px;
+    padding:12px; font-weight:700; font-size:13px; font-family:var(--sans);
+    background:transparent; color:#fff; position:relative; z-index:1;
+  }
+  button.ghost-btn-onquote.ready{ background:var(--good); border-color:var(--good); }
+  .quote-divider{ height:1px; background:rgba(255,255,255,0.14); margin:14px 0; position:relative; z-index:1; }
+  .quote-award{ position:relative; z-index:1; font-size:13px; color:#CBD7E5; line-height:1.5; }
+  .quote-award b{ color:#fff; }
+  .quote-rates{ position:relative; z-index:1; display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .quote-rates .rr{ background:rgba(255,255,255,0.08); border-radius:10px; padding:10px; }
+  .quote-rates .rr .k{ font-size:10px; color:#9FB0C6; text-transform:uppercase; letter-spacing:0.08em; font-weight:800; }
+  .quote-rates .rr .v{ font-family:var(--mono); font-size:17px; font-weight:700; margin-top:2px; }
+
+  button.primary-btn{
+    width:100%; margin-top:14px; border:none; cursor:pointer; border-radius:10px;
+    padding:13px; font-weight:800; font-size:13.5px; font-family:var(--sans);
+    background:var(--ink); color:#fff; position:relative; z-index:1;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    box-shadow: inset 0 -3px 0 rgba(0,156,221,0.55);
+  }
+  button.primary-btn:active{ transform:translateY(1px); }
+  button.ghost-btn{
+    width:100%; margin-top:10px; border:1.5px solid var(--line); cursor:pointer; border-radius:10px;
+    padding:12px; font-weight:700; font-size:13.5px; font-family:var(--sans);
+    background:#fff; color:var(--ink);
+  }
+  .copy-toast{
+    display:none; text-align:center; font-size:12px; font-weight:700; color:var(--good);
+    margin-top:8px;
+  }
+  .copy-toast.show{ display:block; }
+
+  /* ---------- Engagement estimate ---------- */
+  .estimate-total{
+    background:linear-gradient(160deg, #EAF4F9, #DCEEF6);
+    border:1px solid var(--spark-2); border-radius:14px; padding:18px; text-align:center; margin-top:16px;
+  }
+  .estimate-total .elabel{ font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink); font-weight:800; opacity:0.75; }
+  .estimate-total .evalue{
+    font-family:var(--mono); font-size:32px; font-weight:800; color:var(--ink); margin-top:6px; letter-spacing:-0.02em;
+  }
+  .estimate-total .esub{ font-size:12px; color:var(--muted); margin-top:4px; }
+
+  /* ---------- Award check result ---------- */
+  .result-box{
+    margin-top:16px; border-radius:14px; padding:18px; display:none;
+  }
+  .result-box.show{ display:block; }
+  .result-box.pass{ background:var(--good-bg); border:1.5px solid #B8E6C7; }
+  .result-box.fail{ background:var(--bad-bg); border:1.5px solid #F3B6C0; }
+  .result-tag{
+    display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px;
+    font-weight:800; font-size:13px; letter-spacing:0.03em;
+  }
+  .result-tag.pass{ background:var(--good); color:#fff; }
+  .result-tag.fail{ background:var(--bad); color:#fff; }
+  .result-sub{ margin-top:8px; font-size:12.5px; color:var(--muted); line-height:1.5; }
+  .ac-validation{
+    margin-top:10px; font-size:12.5px; font-weight:700; color:var(--bad); text-align:center;
+  }
+  .result-figures{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .result-figure{ background:rgba(255,255,255,0.65); border-radius:10px; padding:11px; }
+  .rf-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); font-weight:800; margin-bottom:4px; }
+  .rf-value{ font-family:var(--mono); font-size:17px; font-weight:800; color:var(--ink); }
+  .result-box.pass .rf-value{ color:var(--good); }
+  .result-box.fail .rf-value{ color:var(--bad); }
+  .fw-warning{
+    margin-top:14px; background:var(--ink); color:#fff; border-radius:10px; padding:13px 14px;
+    font-size:12.5px; line-height:1.55; display:flex; gap:10px; align-items:flex-start;
+  }
+  .fw-warning b{ color:var(--spark-2); }
+
+  .required-star{ color:var(--spark); }
+  .disclaimer{
+    font-size:11.5px; color:var(--muted); text-align:center; padding:0 6px;
+    margin-top:18px; line-height:1.6;
+  }
+
+  /* ---------- Mobile-first enhancements for larger viewports ---------- */
+  @media (min-width:640px){
+    main{ padding:0 20px 28px; }
+    .tabbar{ padding:14px 20px 0; }
+    .card{ padding:22px; margin-top:16px; }
+    .card h2{ font-size:13.5px; }
+    .readout .rvalue{ font-size:27px; }
+    .quote-rates .rr .v{ font-size:21px; }
+    .estimate-total .evalue{ font-size:40px; }
+    h1.pagetitle{ font-size:23px; }
+    header.top{ padding:26px 20px 28px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brandrow">
+    <svg class="spark-mark" width="26" height="26" viewBox="0 0 26 26" fill="none">
+      <path d="M15.5 1L4 15h7.2L9 25l12-15h-7.2L15.5 1z" fill="url(#g1)"/>
+      <defs>
+        <linearGradient id="g1" x1="4" y1="1" x2="17" y2="25" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#A2C8D8"/>
+          <stop offset="1" stop-color="#009CDD"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="wordmark">Fuse Recruitment<small>Rate Card &amp; Compliance Tool</small></div>
+    <span class="fy-badge">FY2026–27</span>
+  </div>
+  <h1 class="pagetitle">Award rate calculator</h1>
+  <p class="pagesub">Select an award and classification to build a client-ready charge rate, then check any casual pay rate against the award minimum.</p>
+
+  <div class="sync-row">
+    <button class="sync-btn" id="syncRatesBtn">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" class="sync-icon"><path d="M12.5 7A5.5 5.5 0 1 1 10.9 3.1M12.5 1.5V4.5H9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Check for latest award rates
+    </button>
+    <div class="sync-status" id="syncStatus">Using built-in rates — not yet synced with Fair Work</div>
+  </div>
+
+  <div class="agency-field">
+    <label for="agencyName">Agency</label>
+    <input type="text" id="agencyName" placeholder="Type your agency name…" value="Fuse Recruitment">
+  </div>
+</header>
+
+<div class="tabbar">
+  <button class="tabbtn active" data-tab="ratecard" id="tabbtn-ratecard"><span class="dot"></span>Rate Card</button>
+  <button class="tabbtn" data-tab="awardcheck" id="tabbtn-awardcheck"><span class="dot"></span>Award Check</button>
+</div>
+
+<main>
+
+  <!-- ============ RATE CARD TAB ============ -->
+  <section class="tabpanel active" id="tab-ratecard">
+
+    <div class="card">
+      <h2><span class="num">01</span>Award &amp; classification</h2>
+      <div class="field">
+        <label class="field-label">Modern award</label>
+        <select id="awardSelect"></select>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label class="field-label">Classification</label>
+          <select id="classSelect"></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Employment type</label>
+          <div class="segmented" id="empTypeSeg">
+            <button data-val="permanent" class="active">Perm/FT</button>
+            <button data-val="casual">Casual +25%</button>
+          </div>
+        </div>
+      </div>
+      <div class="note-box" id="awardNote" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">02</span>Oncosts &amp; margin</h2>
+
+      <div style="margin-top:0;">
+        <div class="margin-row">
+          <label class="field-label" style="margin:0;">Margin</label>
+          <span class="margin-value" id="marginValue">25%</span>
+        </div>
+        <div class="fuse-track-wrap">
+          <input type="range" id="marginSlider" min="10" max="60" value="25" step="1">
+          <div class="fuse-ticks"><span>10%</span><span>60%</span></div>
+        </div>
+        <div class="margin-alert" id="marginAlert">
+          <span class="ico">⚠</span>
+          <span>Margin is below 20% minimum — this quote may not cover overheads. Review before sending to a client.</span>
+        </div>
+      </div>
+
+      <div class="readout-grid">
+        <div class="readout cost">
+          <div class="rlabel">Cost to agency</div>
+          <div class="rvalue" id="costValue">$0.00</div>
+          <div class="rsub">per hour, ordinary time</div>
+        </div>
+        <div class="readout charge">
+          <div class="rlabel">Charge to client</div>
+          <div class="rvalue" id="chargeValue">$0.00</div>
+          <div class="rsub">per hour, ordinary time</div>
+        </div>
+      </div>
+
+      <div class="breakdown-list">
+        <div class="breakdown-row"><span>Base ordinary rate used</span><span class="amt" id="bdBase">$0.00/hr</span></div>
+        <div class="breakdown-row"><span>Superannuation (12%)</span><span class="amt" id="bdSuper">$0.00/hr</span></div>
+        <div class="breakdown-row"><span>WorkCover (1%)</span><span class="amt" id="bdWorkcover">$0.00/hr</span></div>
+        <div class="breakdown-row"><span>Payroll tax (5.45%)</span><span class="amt" id="bdPayroll">$0.00/hr</span></div>
+        <div class="breakdown-row total"><span>Margin per hour (<span id="bdMarginPct">25</span>%)</span><span class="amt" id="bdMarginDollar">$0.00/hr</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">03</span>Penalty rates — <span id="penaltyAwardName">select an award</span></h2>
+      <table class="penalty">
+        <thead>
+          <tr><th>Penalty</th><th style="text-align:right;">Mult.</th><th style="text-align:right;">Pay/hr</th><th style="text-align:right;">Charge/hr</th></tr>
+        </thead>
+        <tbody id="penaltyBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">04</span>Quote details</h2>
+      <div class="field">
+        <label class="field-label">Client name</label>
+        <input type="text" id="clientName" placeholder="e.g. Riverside Logistics Pty Ltd">
+      </div>
+    </div>
+
+    <div class="quote-card">
+      <div class="quote-top">
+        <div>
+          <div class="lbl">Prepared by</div>
+          <div class="val" id="qAgency">Fuse Recruitment</div>
+          <div class="qdate" id="qDate"></div>
+        </div>
+        <div style="text-align:right;">
+          <div class="lbl">Prepared for</div>
+          <div class="val" id="qClient">—</div>
+        </div>
+      </div>
+      <div class="quote-divider"></div>
+      <div class="quote-award">
+        <b id="qAwardName">—</b><br>
+        <span id="qAwardCode"></span> · <span id="qClassLabel">—</span> · <span id="qEmpType">—</span>
+      </div>
+      <div class="quote-rates">
+        <div class="rr"><div class="k">Cost / hr</div><div class="v" id="qCost">$0.00</div></div>
+        <div class="rr"><div class="k">Charge / hr</div><div class="v" id="qCharge">$0.00</div></div>
+      </div>
+      <button class="ghost-btn-onquote" id="screenshotBtn">Prepare for screenshot</button>
+      <button class="primary-btn" id="copyRatesBtn">Copy charge rates</button>
+      <div class="copy-toast" id="copyRatesToast">Copied to clipboard ✓</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">05</span>Engagement estimate</h2>
+      <div class="field">
+        <label class="field-label">Role</label>
+        <input type="text" id="roleField" placeholder="e.g. Forklift Operator">
+      </div>
+      <div class="field">
+        <label class="field-label">Number of weeks</label>
+        <input type="number" id="weeksField" placeholder="e.g. 12" min="1" step="1">
+      </div>
+      <div class="helper">Estimate covers ordinary hours only (38 hrs/week) — excludes penalties, overtime and allowances.</div>
+
+      <div class="estimate-total">
+        <div class="elabel">Estimated total charge</div>
+        <div class="evalue" id="estimateTotal">$0.00</div>
+        <div class="esub" id="estimateSub">Fill in client, role and weeks above</div>
+      </div>
+
+      <button class="ghost-btn" id="copyQuoteBtn">Copy quote</button>
+      <div class="copy-toast" id="copyQuoteToast">Copied to clipboard ✓</div>
+    </div>
+
+    <p class="disclaimer">Rates are indicative, based on published FY2026–27 award pay guide summaries as at July 2026. Site, industry, cold work and dangerous goods allowances are not included. Confirm current rates against the official Fair Work pay guide before quoting a client.</p>
+
+  </section>
+
+  <!-- ============ AWARD CHECK TAB ============ -->
+  <section class="tabpanel" id="tab-awardcheck">
+
+    <div class="card">
+      <h2><span class="num">01</span>Worker &amp; award</h2>
+      <div class="field">
+        <label class="field-label">Modern award</label>
+        <select id="acAwardSelect"></select>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label class="field-label">Classification</label>
+          <select id="acClassSelect"></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Employment type</label>
+          <div class="segmented" id="acEmpTypeSeg">
+            <button data-val="permanent" class="active">Perm/FT</button>
+            <button data-val="casual">Casual +25%</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">02</span>Actual pay</h2>
+      <div class="grid2">
+        <div class="field">
+          <label class="field-label">Rate actually paid ($/hr)</label>
+          <input type="number" id="acActualRate" placeholder="e.g. 24.00" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label class="field-label">Hours worked (period)</label>
+          <input type="number" id="acHours" placeholder="e.g. 76" min="0" step="0.5">
+        </div>
+      </div>
+      <button class="primary-btn" id="runTestBtn">Run test</button>
+      <div class="ac-validation" id="acValidationMsg" style="display:none;"></div>
+    </div>
+
+    <div class="result-box" id="resultBox">
+      <span class="result-tag" id="resultTag">PASS</span>
+      <div class="result-sub" id="resultSub"></div>
+      <div class="result-figures">
+        <div class="result-figure"><div class="rf-label">Award minimum</div><div class="rf-value" id="rfMinimum">$0.00/hr</div></div>
+        <div class="result-figure"><div class="rf-label">Actual rate</div><div class="rf-value" id="rfActual">$0.00/hr</div></div>
+        <div class="result-figure"><div class="rf-label">Shortfall per hour</div><div class="rf-value" id="rfShortfallHour">$0.00</div></div>
+        <div class="result-figure"><div class="rf-label">Total underpayment</div><div class="rf-value" id="rfShortfallTotal">$0.00</div></div>
+      </div>
+      <div class="fw-warning" id="fwWarning" style="display:none;">
+        <span>⚠</span>
+        <span>Seek payroll advice immediately. Fair Work penalties start at <b>$18,780</b> per contravention.</span>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- Data ----------------
+  var AWARDS = {
+    manufacturing: {
+      code:"MA000010", name:"Manufacturing and Associated Industries and Occupations Award",
+      classifications:[
+        {id:"C14", label:"C14 (Entry Level)", rate:25.74},
+        {id:"C13", label:"C13 (Production Employee)", rate:26.44},
+        {id:"C12", label:"C12 (Production Employee)", rate:27.08},
+        {id:"C11", label:"C11 (Production Employee)", rate:27.97},
+        {id:"C10", label:"C10 (Tradesperson/Skilled)", rate:29.45}
+      ],
+      penalties:[
+        {label:"Saturday", mult:1.5},
+        {label:"Sunday", mult:2},
+        {label:"Public Holiday", mult:2.5},
+        {label:"Overtime (first 2 hrs)", mult:1.5},
+        {label:"Overtime (after 2 hrs)", mult:2},
+        {label:"Afternoon Shift", mult:1.15},
+        {label:"Night Shift", mult:1.3}
+      ]
+    },
+    storage: {
+      code:"MA000084", name:"Storage Services and Wholesale Award",
+      classifications:[
+        {id:"G1", label:"Storeworker Grade 1 (Entry)", rate:27.08},
+        {id:"G2", label:"Storeworker Grade 2 (General)", rate:27.97},
+        {id:"G3", label:"Storeworker Grade 3 (Forklift/Senior)", rate:28.90},
+        {id:"G4", label:"Storeworker Grade 4 (Leading Hand)", rate:29.75}
+      ],
+      penalties:[
+        {label:"Saturday", mult:1.5},
+        {label:"Sunday", mult:2},
+        {label:"Public Holiday", mult:2.5},
+        {label:"Overtime (first 2 hrs)", mult:1.5},
+        {label:"Overtime (after 2 hrs)", mult:2}
+      ]
+    },
+    meat: {
+      code:"MA000059", name:"Meat Industry Award",
+      classifications:[
+        {id:"MI1", label:"MI 1 (Entry)", rate:25.74},
+        {id:"MI2", label:"MI 2 (General Processing)", rate:26.44},
+        {id:"MI4", label:"MI 4 (Skilled Boner/Slicer)", rate:27.23},
+        {id:"MI6", label:"MI 6 (Senior/Leading Hand)", rate:27.99}
+      ],
+      penalties:[
+        {label:"Saturday", mult:1.5},
+        {label:"Sunday", mult:2},
+        {label:"Public Holiday", mult:2.5},
+        {label:"Overtime (first 2 hrs)", mult:1.5},
+        {label:"Overtime (after 2 hrs)", mult:2}
+      ],
+      note:"Cold work disability allowance applies separately for cold room/freezer work — not shown in this tool. Public holiday pay can rise up to 2× base plus extra on Christmas Day, Anzac Day and Good Friday after the first 4 hours."
+    },
+    transport: {
+      code:"MA000038", name:"Road Transport and Distribution Award",
+      classifications:[
+        {id:"Grade1", label:"Grade 1 (Light Vehicle)", rate:26.87},
+        {id:"Grade4", label:"Grade 4 (Medium Rigid)", rate:27.90},
+        {id:"Grade7", label:"Grade 7 (Articulated Vehicle)", rate:29.42}
+      ],
+      penalties:[
+        {label:"Saturday", mult:1.5},
+        {label:"Sunday", mult:2},
+        {label:"Public Holiday", mult:2.5},
+        {label:"Overtime (first 2 hrs)", mult:1.5},
+        {label:"Overtime (after 2 hrs)", mult:2}
+      ],
+      note:"Long-distance drivers may fall under a separate award (MA000039) with cents-per-kilometre rates — not covered here."
+    },
+    construction: {
+      code:"MA000020", name:"Building and Construction General On-site Award",
+      classifications:[
+        {id:"CW1", label:"CW1/ECW1 (Labourer, Entry)", rate:26.67},
+        {id:"CW2", label:"CW2/ECW2 (Labourer, Experienced)", rate:27.60},
+        {id:"CW3", label:"CW3/ECW3 (Tradesperson)", rate:28.85},
+        {id:"CW5", label:"CW5/ECW5 (Leading Hand)", rate:30.10}
+      ],
+      penalties:[
+        {label:"Saturday (first 2 hrs)", mult:1.5},
+        {label:"Saturday (after 2 hrs)", mult:2},
+        {label:"Sunday", mult:2},
+        {label:"Public Holiday", mult:2.5}
+      ],
+      note:"This award carries significant site allowances (industry, disability, travel) not modelled in this simplified tool."
+    },
+    clerks: {
+      code:"MA000002", name:"Clerks — Private Sector Award",
+      classifications:[
+        {id:"L1", label:"Level 1 (Entry Admin)", rate:26.97},
+        {id:"L2", label:"Level 2 (Admin Assistant)", rate:29.45},
+        {id:"L3", label:"Level 3 (Senior Clerk/Coordinator)", rate:31.11},
+        {id:"L4", label:"Level 4 (Team Leader)", rate:32.67},
+        {id:"L5", label:"Level 5 (Office Manager)", rate:33.99}
+      ],
+      penalties:[
+        {label:"Saturday (7am–12:30pm only)", mult:1.25},
+        {label:"Sunday", mult:2},
+        {label:"Public Holiday", mult:2.5},
+        {label:"Overtime (first 2 hrs)", mult:1.5},
+        {label:"Overtime (after 2 hrs)", mult:2}
+      ]
+    }
+  };
+
+  var CASUAL_LOADING = 0.25;
+  var SUPER_RATE = 0.12;
+  var WORKCOVER_RATE = 0.01;
+  var PAYROLL_TAX_RATE = 0.0545;
+  var ONCOST_TOTAL = SUPER_RATE + WORKCOVER_RATE + PAYROLL_TAX_RATE;
+  var ORDINARY_HOURS_PER_WEEK = 38;
+  var MIN_MARGIN_WARN = 20;
+
+  // ---------------- Fair Work MAPD sync ----------------
+  // Point this at your deployed proxy (see fwc-mapd-proxy.worker.js),
+  // never at the FWC API directly -- that requires a server-side key.
+  // Leave blank to keep the button disabled with a setup message.
+  var FWC_PROXY_URL = "/api/award-rates"; // relative path works if this file is served from public/ in the same Vercel project as api/award-rates.js
+
+  var syncRatesBtn = document.getElementById("syncRatesBtn");
+  var syncStatus = document.getElementById("syncStatus");
+  var syncIcon = syncRatesBtn.querySelector(".sync-icon");
+
+  function setSyncStatus(text, mode){
+    syncStatus.textContent = text;
+    syncStatus.className = "sync-status" + (mode ? " " + mode : "");
+  }
+
+  // Maps a classification id in our local AWARDS object to whatever
+  // identifier the MAPD API uses for that same classification, so a
+  // returned rate can be matched back to the right row. This mapping
+  // is a best-effort placeholder -- confirm and adjust the FWC-side
+  // field names once you've got a real sample response from the API.
+  function applyFwcRates(awardKey, fwcClassifications){
+    var award = AWARDS[awardKey];
+    if(!award || !Array.isArray(fwcClassifications)) return 0;
+    var updated = 0;
+    fwcClassifications.forEach(function(fwcRow){
+      // TODO: replace these field names with the real ones from FWC's
+      // response once you have a sample payload (classificationCode,
+      // classificationLevel, payRate, hourlyRate -- names vary by feed).
+      var code = fwcRow.classificationCode || fwcRow.classificationId || fwcRow.level;
+      var rate = parseFloat(fwcRow.hourlyRate || fwcRow.payRate || fwcRow.rate);
+      if(!code || isNaN(rate)) return;
+      var local = award.classifications.filter(function(c){
+        return c.id.toLowerCase() === String(code).toLowerCase();
+      })[0];
+      if(local){
+        local.rate = rate;
+        updated++;
+      }
+    });
+    return updated;
+  }
+
+  function checkForLatestRates(){
+    if(!FWC_PROXY_URL){
+      setSyncStatus("No proxy configured yet — set FWC_PROXY_URL in the script to enable this.", "err");
+      return;
+    }
+
+    syncRatesBtn.disabled = true;
+    syncIcon.classList.add("spin");
+    setSyncStatus("Checking Fair Work Commission MAPD database…");
+
+    var awardKeys = Object.keys(AWARDS);
+    var totalUpdated = 0;
+    var failures = [];
+
+    var requests = awardKeys.map(function(key){
+      var code = AWARDS[key].code;
+      return fetch(FWC_PROXY_URL + "?award=" + encodeURIComponent(code))
+        .then(function(res){
+          if(!res.ok) throw new Error(code + ": HTTP " + res.status);
+          return res.json();
+        })
+        .then(function(data){
+          // TODO: confirm the real shape of a successful response --
+          // this assumes { classifications: [...] } but adjust once
+          // you can see an actual payload from the API.
+          var rows = data.classifications || data.payRates || data.items || [];
+          totalUpdated += applyFwcRates(key, rows);
+        })
+        .catch(function(err){
+          failures.push(err.message || String(err));
+        });
+    });
+
+    Promise.all(requests).then(function(){
+      syncRatesBtn.disabled = false;
+      syncIcon.classList.remove("spin");
+      recalc();
+
+      var now = new Date().toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"});
+      if(failures.length === awardKeys.length){
+        setSyncStatus("Couldn't reach the Fair Work database — still using built-in rates. (" + failures[0] + ")", "err");
+      } else if(failures.length > 0){
+        setSyncStatus("Synced " + totalUpdated + " rate(s) as at " + now + " — " + failures.length + " award(s) failed to update.", "err");
+      } else {
+        setSyncStatus("Synced with Fair Work Commission MAPD as at " + now + " (" + totalUpdated + " rates updated).", "ok");
+      }
+    });
+  }
+
+  syncRatesBtn.addEventListener("click", checkForLatestRates);
+  if(!FWC_PROXY_URL){
+    setSyncStatus("Using built-in rates — connect FWC_PROXY_URL in the script to enable live sync.");
+  }
+
+  function fmt(n){
+    if (isNaN(n)) n = 0;
+    return "$" + n.toLocaleString("en-AU", {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  function baseRate(award, classId, empType){
+    var cls = award.classifications.filter(function(c){ return c.id === classId; })[0];
+    if(!cls) return 0;
+    var rate = cls.rate;
+    if(empType === "casual") rate = rate * (1 + CASUAL_LOADING);
+    return rate;
+  }
+
+  function costFromPay(pay){ return pay * (1 + ONCOST_TOTAL); }
+  function chargeFromCost(cost, marginPct){
+    var m = marginPct / 100;
+    if(m >= 1) m = 0.99;
+    return cost / (1 - m);
+  }
+
+  // ---------------- Populate selects ----------------
+  function populateAwardSelect(sel){
+    sel.innerHTML = "";
+    Object.keys(AWARDS).forEach(function(key){
+      var opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = AWARDS[key].name + " [" + AWARDS[key].code + "]";
+      sel.appendChild(opt);
+    });
+  }
+  function populateClassSelect(sel, awardKey){
+    var award = AWARDS[awardKey];
+    sel.innerHTML = "";
+    award.classifications.forEach(function(c){
+      var opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.label + " — " + fmt(c.rate) + "/hr";
+      sel.appendChild(opt);
+    });
+  }
+
+  var awardSelect = document.getElementById("awardSelect");
+  var classSelect = document.getElementById("classSelect");
+  var empTypeSeg = document.getElementById("empTypeSeg");
+  var marginSlider = document.getElementById("marginSlider");
+  var marginValue = document.getElementById("marginValue");
+  var marginAlert = document.getElementById("marginAlert");
+  var costValue = document.getElementById("costValue");
+  var chargeValue = document.getElementById("chargeValue");
+  var penaltyBody = document.getElementById("penaltyBody");
+  var penaltyAwardName = document.getElementById("penaltyAwardName");
+  var awardNote = document.getElementById("awardNote");
+  var clientName = document.getElementById("clientName");
+  var agencyName = document.getElementById("agencyName");
+  var roleField = document.getElementById("roleField");
+  var weeksField = document.getElementById("weeksField");
+
+  populateAwardSelect(awardSelect);
+  populateClassSelect(classSelect, awardSelect.value);
+
+  var currentEmpType = "permanent";
+
+  empTypeSeg.addEventListener("click", function(e){
+    var btn = e.target.closest("button");
+    if(!btn) return;
+    Array.prototype.forEach.call(empTypeSeg.querySelectorAll("button"), function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+    currentEmpType = btn.getAttribute("data-val");
+    recalc();
+  });
+
+  awardSelect.addEventListener("change", function(){
+    populateClassSelect(classSelect, awardSelect.value);
+    recalc();
+  });
+  classSelect.addEventListener("change", recalc);
+  marginSlider.addEventListener("input", recalc);
+  clientName.addEventListener("input", recalc);
+  agencyName.addEventListener("input", recalc);
+  roleField.addEventListener("input", recalc);
+  weeksField.addEventListener("input", recalc);
+
+  function recalc(){
+    var award = AWARDS[awardSelect.value];
+    var classId = classSelect.value;
+    var pay = baseRate(award, classId, currentEmpType);
+    var cost = costFromPay(pay);
+    var marginPct = parseFloat(marginSlider.value);
+    var charge = chargeFromCost(cost, marginPct);
+
+    marginValue.textContent = marginPct + "%";
+    if(marginPct < MIN_MARGIN_WARN){
+      marginAlert.classList.add("show");
+    } else {
+      marginAlert.classList.remove("show");
+    }
+
+    costValue.textContent = fmt(cost);
+    chargeValue.textContent = fmt(charge);
+
+    // Dollar breakdown
+    var superAmt = pay * SUPER_RATE;
+    var workcoverAmt = pay * WORKCOVER_RATE;
+    var payrollAmt = pay * PAYROLL_TAX_RATE;
+    var marginDollar = charge - cost;
+    document.getElementById("bdBase").textContent = fmt(pay) + "/hr";
+    document.getElementById("bdSuper").textContent = fmt(superAmt) + "/hr";
+    document.getElementById("bdWorkcover").textContent = fmt(workcoverAmt) + "/hr";
+    document.getElementById("bdPayroll").textContent = fmt(payrollAmt) + "/hr";
+    document.getElementById("bdMarginPct").textContent = marginPct;
+    document.getElementById("bdMarginDollar").textContent = fmt(marginDollar) + "/hr";
+
+    // Penalty table
+    penaltyAwardName.textContent = award.name;
+    penaltyBody.innerHTML = "";
+    award.penalties.forEach(function(p){
+      var pPay = pay * p.mult;
+      var pCost = costFromPay(pPay);
+      var pCharge = chargeFromCost(pCost, marginPct);
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td>" + p.label + "</td>" +
+        "<td class='num'>" + p.mult + "×</td>" +
+        "<td class='num'>" + fmt(pPay) + "</td>" +
+        "<td class='num'>" + fmt(pCharge) + "</td>";
+      penaltyBody.appendChild(tr);
+    });
+
+    if(award.note){
+      awardNote.style.display = "block";
+      awardNote.textContent = award.note;
+    } else {
+      awardNote.style.display = "none";
+    }
+
+    // Quote card
+    var cls = award.classifications.filter(function(c){ return c.id === classId; })[0];
+    document.getElementById("qAgency").textContent = agencyName.value.trim() || "Fuse Recruitment";
+    document.getElementById("qClient").textContent = clientName.value.trim() || "—";
+    document.getElementById("qDate").textContent = new Date().toLocaleDateString("en-AU", {day:"numeric", month:"long", year:"numeric"});
+    document.getElementById("qAwardName").textContent = award.name;
+    document.getElementById("qAwardCode").textContent = award.code;
+    document.getElementById("qClassLabel").textContent = cls ? cls.label : "—";
+    document.getElementById("qEmpType").textContent = currentEmpType === "casual" ? "Casual (+25% loading)" : "Permanent / Full-time";
+    document.getElementById("qCost").textContent = fmt(cost);
+    document.getElementById("qCharge").textContent = fmt(charge);
+
+    // Engagement estimate
+    var weeks = parseFloat(weeksField.value);
+    var role = roleField.value.trim();
+    var client = clientName.value.trim();
+    var estimateEl = document.getElementById("estimateTotal");
+    var subEl = document.getElementById("estimateSub");
+    if(weeks > 0){
+      var total = charge * ORDINARY_HOURS_PER_WEEK * weeks;
+      estimateEl.textContent = fmt(total);
+      var subParts = [];
+      if(client) subParts.push(client);
+      if(role) subParts.push(role);
+      subParts.push(weeks + " wk" + (weeks == 1 ? "" : "s") + " · " + ORDINARY_HOURS_PER_WEEK + " hrs/wk ordinary time");
+      subEl.textContent = subParts.join(" · ");
+    } else {
+      estimateEl.textContent = "$0.00";
+      subEl.textContent = "Fill in client, role and weeks above";
+    }
+
+    window._fuseState = {
+      award: award, classId: classId, cls: cls, empType: currentEmpType,
+      pay: pay, cost: cost, charge: charge, marginPct: marginPct,
+      agency: agencyName.value.trim() || "Fuse Recruitment",
+      client: clientName.value.trim(), role: role, weeks: weeks
+    };
+  }
+
+  recalc();
+
+  // ---------------- Copy buttons ----------------
+  function copyText(text, toastEl){
+    function shown(){
+      toastEl.classList.add("show");
+      setTimeout(function(){ toastEl.classList.remove("show"); }, 2200);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(shown).catch(function(){ fallbackCopy(text); shown(); });
+    } else {
+      fallbackCopy(text);
+      shown();
+    }
+  }
+  function fallbackCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  document.getElementById("screenshotBtn").addEventListener("click", function(){
+    var btn = document.getElementById("screenshotBtn");
+    var original = btn.textContent;
+    btn.textContent = "Ready — screenshot the card above";
+    btn.classList.add("ready");
+    setTimeout(function(){
+      btn.textContent = original;
+      btn.classList.remove("ready");
+    }, 2200);
+  });
+
+  document.getElementById("copyRatesBtn").addEventListener("click", function(){
+    var s = window._fuseState;
+    var award = AWARDS[awardSelect.value];
+    var lines = [];
+    lines.push(s.agency + " — Charge Rate Card");
+    lines.push(s.client ? ("Prepared for: " + s.client) : "");
+    lines.push(award.name + " [" + award.code + "]");
+    lines.push("Classification: " + (s.cls ? s.cls.label : "—") + " · " + (s.empType === "casual" ? "Casual (+25%)" : "Permanent/Full-time"));
+    lines.push("Margin: " + s.marginPct + "%");
+    lines.push("");
+    lines.push("Ordinary time — Cost/hr: " + fmt(s.cost) + " · Charge/hr: " + fmt(s.charge));
+    lines.push("");
+    lines.push("Penalty rates (charge/hr):");
+    award.penalties.forEach(function(p){
+      var pPay = s.pay * p.mult;
+      var pCost = costFromPay(pPay);
+      var pCharge = chargeFromCost(pCost, s.marginPct);
+      lines.push("  " + p.label + " (" + p.mult + "×): " + fmt(pCharge));
+    });
+    copyText(lines.filter(Boolean).join("\n"), document.getElementById("copyRatesToast"));
+  });
+
+  document.getElementById("copyQuoteBtn").addEventListener("click", function(){
+    var s = window._fuseState;
+    var award = s.award;
+    var lines = [];
+    lines.push("Quote — " + s.agency);
+    lines.push(s.client ? ("Client: " + s.client) : "Client: —");
+    lines.push(s.role ? ("Role: " + s.role) : "");
+    lines.push("Award: " + award.name + " [" + award.code + "]");
+    lines.push("Classification: " + (s.cls ? s.cls.label : "—"));
+    lines.push("Employment type: " + (s.empType === "casual" ? "Casual (+25% loading)" : "Permanent/Full-time"));
+    lines.push("Charge rate: " + fmt(s.charge) + "/hr (ordinary time)");
+    if(s.weeks > 0){
+      lines.push("Engagement length: " + s.weeks + " week" + (s.weeks == 1 ? "" : "s") + " at " + ORDINARY_HOURS_PER_WEEK + " ordinary hrs/wk");
+      lines.push("Estimated total charge: " + fmt(s.charge * ORDINARY_HOURS_PER_WEEK * s.weeks));
+    }
+    lines.push("");
+    lines.push("Estimate covers ordinary hours only — excludes penalties, overtime and allowances.");
+    copyText(lines.filter(Boolean).join("\n"), document.getElementById("copyQuoteToast"));
+  });
+
+  // ---------------- Tabs ----------------
+  var tabbtns = document.querySelectorAll(".tabbtn");
+  tabbtns.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      tabbtns.forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      document.querySelectorAll(".tabpanel").forEach(function(p){ p.classList.remove("active"); });
+      document.getElementById("tab-" + btn.getAttribute("data-tab")).classList.add("active");
+    });
+  });
+
+  // ---------------- Award Check tab ----------------
+  var acAwardSelect = document.getElementById("acAwardSelect");
+  var acClassSelect = document.getElementById("acClassSelect");
+  var acEmpTypeSeg = document.getElementById("acEmpTypeSeg");
+  var acActualRate = document.getElementById("acActualRate");
+  var acHours = document.getElementById("acHours");
+  var runTestBtn = document.getElementById("runTestBtn");
+  var resultBox = document.getElementById("resultBox");
+  var resultTag = document.getElementById("resultTag");
+  var resultSub = document.getElementById("resultSub");
+  var acValidationMsg = document.getElementById("acValidationMsg");
+  var fwWarning = document.getElementById("fwWarning");
+
+  populateAwardSelect(acAwardSelect);
+  populateClassSelect(acClassSelect, acAwardSelect.value);
+
+  var acEmpType = "permanent";
+  acEmpTypeSeg.addEventListener("click", function(e){
+    var btn = e.target.closest("button");
+    if(!btn) return;
+    Array.prototype.forEach.call(acEmpTypeSeg.querySelectorAll("button"), function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+    acEmpType = btn.getAttribute("data-val");
+  });
+
+  acAwardSelect.addEventListener("change", function(){
+    populateClassSelect(acClassSelect, acAwardSelect.value);
+  });
+
+  runTestBtn.addEventListener("click", function(){
+    var award = AWARDS[acAwardSelect.value];
+    var classId = acClassSelect.value;
+    var minRate = baseRate(award, classId, acEmpType);
+    var actual = parseFloat(acActualRate.value);
+    var hours = parseFloat(acHours.value);
+
+    if(isNaN(actual) || isNaN(hours) || hours <= 0){
+      acValidationMsg.textContent = "Enter both the actual rate paid and hours worked (numbers only) to run the test.";
+      acValidationMsg.style.display = "block";
+      resultBox.classList.remove("show");
+      return;
+    }
+    acValidationMsg.style.display = "none";
+
+    var cls = award.classifications.filter(function(c){ return c.id === classId; })[0];
+    var shortfall = minRate - actual;
+    var totalUnderpayment = shortfall > 0 ? shortfall * hours : 0;
+    var empLabel = acEmpType === "casual" ? "casual" : "permanent/full-time";
+
+    document.getElementById("rfMinimum").textContent = fmt(minRate) + "/hr";
+    document.getElementById("rfActual").textContent = fmt(actual) + "/hr";
+
+    if(shortfall <= 0){
+      resultBox.className = "result-box show pass";
+      resultTag.className = "result-tag pass";
+      resultTag.textContent = "PASS";
+      resultSub.textContent = "Actual rate meets or exceeds the " + empLabel + " award minimum for " + (cls ? cls.label : classId) + ". No shortfall detected.";
+      document.getElementById("rfShortfallHour").textContent = "$0.00";
+      document.getElementById("rfShortfallTotal").textContent = "$0.00";
+      fwWarning.style.display = "none";
+    } else {
+      resultBox.className = "result-box show fail";
+      resultTag.className = "result-tag fail";
+      resultTag.textContent = "FAIL";
+      resultSub.textContent = "Actual rate is below the " + empLabel + " award minimum for " + (cls ? cls.label : classId) + ".";
+      document.getElementById("rfShortfallHour").textContent = fmt(shortfall);
+      document.getElementById("rfShortfallTotal").textContent = fmt(totalUnderpayment);
+      fwWarning.style.display = "flex";
+    }
+
+    try{
+      if(typeof resultBox.scrollIntoView === "function"){
+        resultBox.scrollIntoView({behavior:"smooth", block:"nearest"});
+      }
+    }catch(e){}
+  });
+
+})();
+</script>
+</body>
+</html>
