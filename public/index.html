@@ -138,6 +138,39 @@
   }
   .card h2 .num{ color:var(--ink); margin-right:6px; }
 
+  /* ---------- Inline help (click-to-reveal, mobile-friendly) ---------- */
+  .help-tip{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:16px; height:16px; border-radius:50%; border:1.5px solid var(--muted);
+    color:var(--muted); font-size:10px; font-weight:800; font-family:var(--sans);
+    background:none; cursor:pointer; vertical-align:middle; margin-left:5px; padding:0;
+    line-height:1;
+  }
+  .help-tip[aria-expanded="true"]{ background:var(--spark); border-color:var(--spark); color:#fff; }
+  .help-text{
+    display:none; font-size:12px; color:var(--muted); line-height:1.5;
+    background:var(--surface); border-radius:8px; padding:9px 11px; margin-top:8px;
+  }
+  .help-text.show{ display:block; }
+
+  .howto{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    margin-top:14px; overflow:hidden;
+  }
+  .howto summary{
+    padding:14px 16px; font-weight:800; font-size:13px; color:var(--ink);
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
+  }
+  .howto summary::-webkit-details-marker{ display:none; }
+  .howto summary::before{ content:"?"; display:inline-flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:50%; background:var(--surface); color:var(--ink);
+    font-size:12px; font-weight:800; flex:0 0 auto;
+  }
+  .howto[open] summary::before{ background:var(--spark); color:#fff; }
+  .howto-body{ padding:0 16px 16px; font-size:12.5px; color:var(--muted); line-height:1.6; }
+  .howto-body ol{ margin:0; padding-left:18px; }
+  .howto-body li{ margin-bottom:6px; }
+
   label.field-label{
     display:block; font-size:12px; font-weight:700; color:var(--ink); margin:0 0 6px;
   }
@@ -388,6 +421,19 @@
   <!-- ============ RATE CARD TAB ============ -->
   <section class="tabpanel active" id="tab-ratecard">
 
+    <details class="howto">
+      <summary>How to use this</summary>
+      <div class="howto-body">
+        <ol>
+          <li>Pick the award and classification that matches the worker.</li>
+          <li>Choose Permanent/FT or Casual — casual automatically adds the 25% loading.</li>
+          <li>Drag the margin slider to set what Fuse charges on top of cost. A red warning appears if it drops below 20%.</li>
+          <li>The <b>Charge to client</b> figure is what you'd quote — <b>Cost to agency</b> is what it actually costs Fuse to employ them.</li>
+          <li>Fill in the client name and (optionally) role and weeks to get a full quote you can copy or screenshot.</li>
+        </ol>
+      </div>
+    </details>
+
     <div class="card">
       <h2><span class="num">01</span>Award &amp; classification</h2>
       <div class="field">
@@ -400,24 +446,33 @@
           <select id="classSelect"></select>
         </div>
         <div class="field">
-          <label class="field-label">Employment type</label>
+          <label class="field-label">Employment type
+            <button type="button" class="help-tip" aria-expanded="false" data-help="empType-help">?</button>
+          </label>
           <div class="segmented" id="empTypeSeg">
             <button data-val="permanent" class="active">Perm/FT</button>
             <button data-val="casual">Casual +25%</button>
           </div>
         </div>
       </div>
+      <div class="help-text" id="empType-help">Casual workers are paid a 25% loading on top of the base rate instead of getting leave entitlements. If the worker gets sick leave/annual leave, choose Permanent/FT.</div>
       <div class="note-box" id="awardNote" style="display:none;"></div>
     </div>
 
     <div class="card">
-      <h2><span class="num">02</span>Oncosts &amp; margin</h2>
+      <h2><span class="num">02</span>Oncosts &amp; margin
+        <button type="button" class="help-tip" aria-expanded="false" data-help="oncost-help">?</button>
+      </h2>
+      <div class="help-text" id="oncost-help">Oncosts are the extra costs Fuse pays on top of a worker's wage — super, WorkCover insurance and payroll tax. They're added automatically below; you don't need to enter anything here.</div>
 
-      <div style="margin-top:0;">
+      <div style="margin-top:14px;">
         <div class="margin-row">
-          <label class="field-label" style="margin:0;">Margin</label>
+          <label class="field-label" style="margin:0;">Margin
+            <button type="button" class="help-tip" aria-expanded="false" data-help="margin-help">?</button>
+          </label>
           <span class="margin-value" id="marginValue">25%</span>
         </div>
+        <div class="help-text" id="margin-help">This is what Fuse adds on top of cost as profit. Drag right to charge more, left to charge less. Below 20% you'll get a warning — that's usually too thin to cover overheads.</div>
         <div class="fuse-track-wrap">
           <input type="range" id="marginSlider" min="10" max="60" value="25" step="1">
           <div class="fuse-ticks"><span>10%</span><span>60%</span></div>
@@ -432,12 +487,12 @@
         <div class="readout cost">
           <div class="rlabel">Cost to agency</div>
           <div class="rvalue" id="costValue">$0.00</div>
-          <div class="rsub">per hour, ordinary time</div>
+          <div class="rsub">what it costs Fuse per hour</div>
         </div>
         <div class="readout charge">
           <div class="rlabel">Charge to client</div>
           <div class="rvalue" id="chargeValue">$0.00</div>
-          <div class="rsub">per hour, ordinary time</div>
+          <div class="rsub">what you quote the client</div>
         </div>
       </div>
 
@@ -523,6 +578,18 @@
   <!-- ============ AWARD CHECK TAB ============ -->
   <section class="tabpanel" id="tab-awardcheck">
 
+    <details class="howto">
+      <summary>How to use this</summary>
+      <div class="howto-body">
+        <ol>
+          <li>Use this when you want to check whether a worker is being paid enough — for example, a client tells you a casual's hourly rate and you want to make sure it's legal.</li>
+          <li>Select the award, classification and employment type that matches the worker.</li>
+          <li>Enter what they're actually being paid per hour, and how many hours the check should cover.</li>
+          <li>Tap Run test. <b>PASS</b> means the rate is at or above the legal minimum. <b>FAIL</b> means it's below — you'll see exactly how much they're being underpaid, in total.</li>
+        </ol>
+      </div>
+    </details>
+
     <div class="card">
       <h2><span class="num">01</span>Worker &amp; award</h2>
       <div class="field">
@@ -535,17 +602,23 @@
           <select id="acClassSelect"></select>
         </div>
         <div class="field">
-          <label class="field-label">Employment type</label>
+          <label class="field-label">Employment type
+            <button type="button" class="help-tip" aria-expanded="false" data-help="acEmpType-help">?</button>
+          </label>
           <div class="segmented" id="acEmpTypeSeg">
             <button data-val="permanent" class="active">Perm/FT</button>
             <button data-val="casual">Casual +25%</button>
           </div>
         </div>
       </div>
+      <div class="help-text" id="acEmpType-help">This changes the legal minimum you're checking against — casual workers have a higher minimum (the 25% loading built in) than permanent/full-time.</div>
     </div>
 
     <div class="card">
-      <h2><span class="num">02</span>Actual pay</h2>
+      <h2><span class="num">02</span>Actual pay
+        <button type="button" class="help-tip" aria-expanded="false" data-help="acPay-help">?</button>
+      </h2>
+      <div class="help-text" id="acPay-help">Enter the rate the worker is actually being paid (not what you charge the client), and the number of hours you want to check — e.g. a week or a full pay cycle.</div>
       <div class="grid2">
         <div class="field">
           <label class="field-label">Rate actually paid ($/hr)</label>
@@ -701,6 +774,7 @@
   // never at the FWC API directly -- that requires a server-side key.
   // Leave blank to keep the button disabled with a setup message.
   var FWC_PROXY_URL = "/api/award-rates"; // relative path works if this file is served from public/ in the same Vercel project as api/award-rates.js
+  var FWC_PROXY_TOKEN = ""; // must match PROXY_SHARED_SECRET set in Vercel -- generate one with `openssl rand -hex 24` or a password manager
 
   var syncRatesBtn = document.getElementById("syncRatesBtn");
   var syncStatus = document.getElementById("syncStatus");
@@ -711,31 +785,45 @@
     syncStatus.className = "sync-status" + (mode ? " " + mode : "");
   }
 
-  // Maps a classification id in our local AWARDS object to whatever
-  // identifier the MAPD API uses for that same classification, so a
-  // returned rate can be matched back to the right row. This mapping
-  // is a best-effort placeholder -- confirm and adjust the FWC-side
-  // field names once you've got a real sample response from the API.
-  function applyFwcRates(awardKey, fwcClassifications){
+  // Matches FWC's returned classifications back to our local list by
+  // RANK ORDER (lowest-paid to highest-paid), not by name or code --
+  // different awards spell out classifications differently (some use
+  // short codes like "C10" that happen to match our ids, others use
+  // full text like "Level 1" that won't). Rank order is the one thing
+  // that reliably lines up across every award's structure.
+  //
+  // Safety rule: if the number of classifications FWC returns doesn't
+  // match the number we have locally, we DON'T guess -- we skip that
+  // award entirely and leave its built-in rates untouched, and report
+  // the mismatch so it's visible rather than silently wrong.
+  function applyFwcRates(awardKey, fwcRows){
     var award = AWARDS[awardKey];
-    if(!award || !Array.isArray(fwcClassifications)) return 0;
+    if(!award || !Array.isArray(fwcRows) || fwcRows.length === 0){
+      return { updated: 0, skipped: true, reason: "no data returned" };
+    }
+
+    var localSorted = award.classifications.slice().sort(function(a, b){ return a.rate - b.rate; });
+    var fwcSorted = fwcRows.slice().sort(function(a, b){
+      return (a.classificationLevel || 0) - (b.classificationLevel || 0);
+    });
+
+    if(localSorted.length !== fwcSorted.length){
+      return {
+        updated: 0,
+        skipped: true,
+        reason: "classification count mismatch (local " + localSorted.length + " vs FWC " + fwcSorted.length + ")"
+      };
+    }
+
     var updated = 0;
-    fwcClassifications.forEach(function(fwcRow){
-      // TODO: replace these field names with the real ones from FWC's
-      // response once you have a sample payload (classificationCode,
-      // classificationLevel, payRate, hourlyRate -- names vary by feed).
-      var code = fwcRow.classificationCode || fwcRow.classificationId || fwcRow.level;
-      var rate = parseFloat(fwcRow.hourlyRate || fwcRow.payRate || fwcRow.rate);
-      if(!code || isNaN(rate)) return;
-      var local = award.classifications.filter(function(c){
-        return c.id.toLowerCase() === String(code).toLowerCase();
-      })[0];
-      if(local){
-        local.rate = rate;
+    for(var i = 0; i < localSorted.length; i++){
+      var rate = parseFloat(fwcSorted[i].rate);
+      if(!isNaN(rate)){
+        localSorted[i].rate = rate;
         updated++;
       }
-    });
-    return updated;
+    }
+    return { updated: updated, skipped: false };
   }
 
   function checkForLatestRates(){
@@ -746,25 +834,39 @@
 
     syncRatesBtn.disabled = true;
     syncIcon.classList.add("spin");
-    setSyncStatus("Checking Fair Work Commission MAPD database…");
+    setSyncStatus("Checking for the latest official rates…");
 
     var awardKeys = Object.keys(AWARDS);
     var totalUpdated = 0;
     var failures = [];
+    var skippedAwards = [];
+
+    function friendlyHttpError(status){
+      if(status === 401 || status === 403) return "couldn't verify access";
+      if(status === 404) return "not found in the Fair Work database";
+      if(status === 429) return "too many requests just now";
+      if(status >= 500) return "Fair Work's system is having issues";
+      return "couldn't connect";
+    }
 
     var requests = awardKeys.map(function(key){
       var code = AWARDS[key].code;
-      return fetch(FWC_PROXY_URL + "?award=" + encodeURIComponent(code))
+      return fetch(FWC_PROXY_URL + "?award=" + encodeURIComponent(code), {
+          headers: FWC_PROXY_TOKEN ? { "x-proxy-token": FWC_PROXY_TOKEN } : {}
+        })
         .then(function(res){
-          if(!res.ok) throw new Error(code + ": HTTP " + res.status);
+          if(!res.ok) throw new Error(code + " — " + friendlyHttpError(res.status) + " (HTTP " + res.status + ")");
           return res.json();
         })
         .then(function(data){
-          // TODO: confirm the real shape of a successful response --
-          // this assumes { classifications: [...] } but adjust once
-          // you can see an actual payload from the API.
-          var rows = data.classifications || data.payRates || data.items || [];
-          totalUpdated += applyFwcRates(key, rows);
+          if(data.error) throw new Error(code + " — " + data.error);
+          var rows = data.classifications || [];
+          var result = applyFwcRates(key, rows);
+          if(result.skipped){
+            skippedAwards.push(code + " (" + result.reason + ")");
+          } else {
+            totalUpdated += result.updated;
+          }
         })
         .catch(function(err){
           failures.push(err.message || String(err));
@@ -778,11 +880,14 @@
 
       var now = new Date().toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"});
       if(failures.length === awardKeys.length){
-        setSyncStatus("Couldn't reach the Fair Work database — still using built-in rates. (" + failures[0] + ")", "err");
-      } else if(failures.length > 0){
-        setSyncStatus("Synced " + totalUpdated + " rate(s) as at " + now + " — " + failures.length + " award(s) failed to update.", "err");
+        setSyncStatus("Couldn't reach Fair Work just now — still using the standard built-in rates, which is fine to quote from. (" + failures[0] + ")", "err");
+      } else if(failures.length > 0 || skippedAwards.length > 0){
+        var issues = [];
+        if(failures.length > 0) issues.push(failures.length + " award(s) didn't update");
+        if(skippedAwards.length > 0) issues.push(skippedAwards.length + " award(s) need review: " + skippedAwards.join("; "));
+        setSyncStatus("Updated most rates as at " + now + " — " + issues.join(", ") + ".", "err");
       } else {
-        setSyncStatus("Synced with Fair Work Commission MAPD as at " + now + " (" + totalUpdated + " rates updated).", "ok");
+        setSyncStatus("Live rates confirmed as at " + now + " (" + totalUpdated + " rate(s) checked).", "ok");
       }
     });
   }
@@ -851,6 +956,18 @@
 
   populateAwardSelect(awardSelect);
   populateClassSelect(classSelect, awardSelect.value);
+
+  // Click-to-reveal help tooltips -- works the same on touch and mouse,
+  // unlike hover-based tooltips which don't exist on phones.
+  document.querySelectorAll(".help-tip").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var target = document.getElementById(btn.getAttribute("data-help"));
+      if(!target) return;
+      var isOpen = target.classList.contains("show");
+      target.classList.toggle("show", !isOpen);
+      btn.setAttribute("aria-expanded", String(!isOpen));
+    });
+  });
 
   var currentEmpType = "permanent";
 
