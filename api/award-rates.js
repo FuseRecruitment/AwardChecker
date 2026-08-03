@@ -39,6 +39,30 @@
  * Vercel environment variable), calls FWC on the tool's behalf, and
  * hands back a simplified JSON shape the tool can use directly.
  *
+ * ACCESS CONTROL ON THIS ENDPOINT ITSELF:
+ * Without anything extra, this endpoint is wide open -- anyone who
+ * finds the URL can call it directly and burn through your FWC quota.
+ * Two layers of defence, added below:
+ *
+ *  1. Shared secret. The tool sends a token (as an `x-proxy-token`
+ *     header, or a `?token=` query param for manual browser testing)
+ *     that must match the PROXY_SHARED_SECRET environment variable.
+ *     Honest caveat: because the tool is a static HTML file, this
+ *     token is visible to anyone who views its page source. This is
+ *     NOT a real secret in the cryptographic sense -- it's a filter
+ *     that stops opportunistic bots/scanners hitting the endpoint
+ *     without ever having loaded the tool, which is the overwhelming
+ *     majority of "random hammering." Someone who deliberately reads
+ *     the deployed HTML's source can still find it and bypass this.
+ *  2. Best-effort rate limiting. A simple per-warm-instance counter
+ *     caps requests per IP per minute. This is NOT a guaranteed global
+ *     limit (Vercel Edge runs many isolates, each with its own
+ *     counter), but it does blunt a single script hammering the
+ *     endpoint in a tight loop from one place. For a hard guarantee,
+ *     the real fix is Vercel KV / Upstash Redis-backed rate limiting,
+ *     which is a bigger change (adds a dependency + build step) --
+ *     worth doing if this proves insufficient in practice.
+ *
  * PROJECT LAYOUT (same Vercel project as the tool, so it's same-origin):
  *   your-project/
  *     package.json      <-- needs "type": "module"
@@ -49,11 +73,17 @@
  *
  * SETUP:
  * 1. Add this file at api/award-rates.js in your Vercel project.
- * 2. Vercel dashboard -> Project -> Settings -> Environment Variables
- *    -> add FWC_API_KEY (Production + Preview) with your subscription
- *    key from https://developer.fwc.gov.au (Profile page -> "Show").
- * 3. Deploy (git push, or `vercel --prod` via CLI).
- * 4. Test: https://<your-project>.vercel.app/api/award-rates?award=MA000010
+ * 2. Vercel dashboard -> Project -> Settings -> Environment Variables:
+ *    - FWC_API_KEY (Production + Preview) -- your FWC subscription key.
+ *    - PROXY_SHARED_SECRET (Production + Preview) -- any long random
+ *      string you generate yourself (e.g. run
+ *      `openssl rand -hex 24` in a terminal, or use a password
+ *      generator for a 32+ character string). This is NOT the FWC key
+ *      -- it's a separate secret just for this endpoint.
+ * 3. Put that SAME string into the tool's FWC_PROXY_TOKEN constant
+ *    (see fuse-rate-card-tool.html) so the two sides match.
+ * 4. Deploy (git push, or `vercel --prod` via CLI).
+ * 5. Test: https://<your-project>.vercel.app/api/award-rates?award=MA000010&token=<your-secret>
  *
  * STILL WORTH CONFIRMING:
  * - This wrapper matches classifications back to the rate card by RANK
@@ -67,17 +97,45 @@
 export const config = { runtime: "edge" };
 
 const FWC_API_BASE = "https://api.fwc.gov.au/api/v1/awards";
+const RATE_LIMIT_MAX = 20;       // requests
+const RATE_LIMIT_WINDOW_MS = 60000; // per minute, per warm instance
 
 // In-memory cache of code -> award_fixed_id, populated on first use in
 // a given warm instance. Cold starts just rebuild it -- harmless, one
 // extra request.
 let awardIdCache = null;
 
+// Best-effort rate limiter state -- see caveat in the comment block above.
+let rateLimitState = new Map();
+
 export default async function handler(request) {
   const url = new URL(request.url);
 
   if (request.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders() });
+  }
+
+  // --- Layer 1: shared secret ---
+  const expectedSecret = process.env.PROXY_SHARED_SECRET;
+  if (!expectedSecret) {
+    return json({ error: "PROXY_SHARED_SECRET is not set on this deployment" }, 500);
+  }
+  const providedSecret = request.headers.get("x-proxy-token") || url.searchParams.get("token");
+  if (providedSecret !== expectedSecret) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  // --- Layer 2: best-effort rate limit ---
+  const clientIp = request.headers.get("x-forwarded-for") || "unknown";
+  const now = Date.now();
+  const entry = rateLimitState.get(clientIp);
+  if (entry && now - entry.windowStart < RATE_LIMIT_WINDOW_MS) {
+    if (entry.count >= RATE_LIMIT_MAX) {
+      return json({ error: "Too many requests -- slow down and try again shortly" }, 429);
+    }
+    entry.count++;
+  } else {
+    rateLimitState.set(clientIp, { count: 1, windowStart: now });
   }
 
   const awardCode = url.searchParams.get("award"); // e.g. MA000010
