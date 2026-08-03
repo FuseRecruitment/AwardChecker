@@ -657,15 +657,26 @@
   "use strict";
 
   // ---------------- Data ----------------
+  // matchKey = the exact text expected to appear as a whole word/phrase
+  // inside FWC's `classification` label for that row, used to find the
+  // right rate among FWC's full classification list (which includes
+  // many levels/streams this tool doesn't model -- see note below).
+  // CONFIRMED against a real live response: manufacturing (all 5 match
+  // FWC's "C14 / V1", "C13 / V2" etc exactly, rates line up to the cent).
+  // The other five awards' matchKeys are informed best-effort guesses
+  // based on how these awards are known to name classifications --
+  // NOT yet confirmed against a live response. First sync after this
+  // update should be checked per-award; the sync status will report
+  // which classifications it couldn't find a confident match for.
   var AWARDS = {
     manufacturing: {
       code:"MA000010", name:"Manufacturing and Associated Industries and Occupations Award",
       classifications:[
-        {id:"C14", label:"C14 (Entry Level)", rate:25.74},
-        {id:"C13", label:"C13 (Production Employee)", rate:26.44},
-        {id:"C12", label:"C12 (Production Employee)", rate:27.08},
-        {id:"C11", label:"C11 (Production Employee)", rate:27.97},
-        {id:"C10", label:"C10 (Tradesperson/Skilled)", rate:29.45}
+        {id:"C14", matchKey:"C14", label:"C14 (Entry Level)", rate:25.74},
+        {id:"C13", matchKey:"C13", label:"C13 (Production Employee)", rate:26.44},
+        {id:"C12", matchKey:"C12", label:"C12 (Production Employee)", rate:27.08},
+        {id:"C11", matchKey:"C11", label:"C11 (Production Employee)", rate:27.97},
+        {id:"C10", matchKey:"C10", label:"C10 (Tradesperson/Skilled)", rate:29.45}
       ],
       penalties:[
         {label:"Saturday", mult:1.5},
@@ -680,10 +691,10 @@
     storage: {
       code:"MA000084", name:"Storage Services and Wholesale Award",
       classifications:[
-        {id:"G1", label:"Storeworker Grade 1 (Entry)", rate:27.08},
-        {id:"G2", label:"Storeworker Grade 2 (General)", rate:27.97},
-        {id:"G3", label:"Storeworker Grade 3 (Forklift/Senior)", rate:28.90},
-        {id:"G4", label:"Storeworker Grade 4 (Leading Hand)", rate:29.75}
+        {id:"G1", matchKey:"Grade 1", label:"Storeworker Grade 1 (Entry)", rate:27.08},
+        {id:"G2", matchKey:"Grade 2", label:"Storeworker Grade 2 (General)", rate:27.97},
+        {id:"G3", matchKey:"Grade 3", label:"Storeworker Grade 3 (Forklift/Senior)", rate:28.90},
+        {id:"G4", matchKey:"Grade 4", label:"Storeworker Grade 4 (Leading Hand)", rate:29.75}
       ],
       penalties:[
         {label:"Saturday", mult:1.5},
@@ -696,10 +707,10 @@
     meat: {
       code:"MA000059", name:"Meat Industry Award",
       classifications:[
-        {id:"MI1", label:"MI 1 (Entry)", rate:25.74},
-        {id:"MI2", label:"MI 2 (General Processing)", rate:26.44},
-        {id:"MI4", label:"MI 4 (Skilled Boner/Slicer)", rate:27.23},
-        {id:"MI6", label:"MI 6 (Senior/Leading Hand)", rate:27.99}
+        {id:"MI1", matchKey:"MI1", label:"MI 1 (Entry)", rate:25.74},
+        {id:"MI2", matchKey:"MI2", label:"MI 2 (General Processing)", rate:26.44},
+        {id:"MI4", matchKey:"MI4", label:"MI 4 (Skilled Boner/Slicer)", rate:27.23},
+        {id:"MI6", matchKey:"MI6", label:"MI 6 (Senior/Leading Hand)", rate:27.99}
       ],
       penalties:[
         {label:"Saturday", mult:1.5},
@@ -713,9 +724,9 @@
     transport: {
       code:"MA000038", name:"Road Transport and Distribution Award",
       classifications:[
-        {id:"Grade1", label:"Grade 1 (Light Vehicle)", rate:26.87},
-        {id:"Grade4", label:"Grade 4 (Medium Rigid)", rate:27.90},
-        {id:"Grade7", label:"Grade 7 (Articulated Vehicle)", rate:29.42}
+        {id:"Grade1", matchKey:"Grade 1", label:"Grade 1 (Light Vehicle)", rate:26.87},
+        {id:"Grade4", matchKey:"Grade 4", label:"Grade 4 (Medium Rigid)", rate:27.90},
+        {id:"Grade7", matchKey:"Grade 7", label:"Grade 7 (Articulated Vehicle)", rate:29.42}
       ],
       penalties:[
         {label:"Saturday", mult:1.5},
@@ -729,10 +740,10 @@
     construction: {
       code:"MA000020", name:"Building and Construction General On-site Award",
       classifications:[
-        {id:"CW1", label:"CW1/ECW1 (Labourer, Entry)", rate:26.67},
-        {id:"CW2", label:"CW2/ECW2 (Labourer, Experienced)", rate:27.60},
-        {id:"CW3", label:"CW3/ECW3 (Tradesperson)", rate:28.85},
-        {id:"CW5", label:"CW5/ECW5 (Leading Hand)", rate:30.10}
+        {id:"CW1", matchKey:"CW1", label:"CW1/ECW1 (Labourer, Entry)", rate:26.67},
+        {id:"CW2", matchKey:"CW2", label:"CW2/ECW2 (Labourer, Experienced)", rate:27.60},
+        {id:"CW3", matchKey:"CW3", label:"CW3/ECW3 (Tradesperson)", rate:28.85},
+        {id:"CW5", matchKey:"CW5", label:"CW5/ECW5 (Leading Hand)", rate:30.10}
       ],
       penalties:[
         {label:"Saturday (first 2 hrs)", mult:1.5},
@@ -745,11 +756,11 @@
     clerks: {
       code:"MA000002", name:"Clerks — Private Sector Award",
       classifications:[
-        {id:"L1", label:"Level 1 (Entry Admin)", rate:26.97},
-        {id:"L2", label:"Level 2 (Admin Assistant)", rate:29.45},
-        {id:"L3", label:"Level 3 (Senior Clerk/Coordinator)", rate:31.11},
-        {id:"L4", label:"Level 4 (Team Leader)", rate:32.67},
-        {id:"L5", label:"Level 5 (Office Manager)", rate:33.99}
+        {id:"L1", matchKey:"Level 1", label:"Level 1 (Entry Admin)", rate:26.97},
+        {id:"L2", matchKey:"Level 2", label:"Level 2 (Admin Assistant)", rate:29.45},
+        {id:"L3", matchKey:"Level 3", label:"Level 3 (Senior Clerk/Coordinator)", rate:31.11},
+        {id:"L4", matchKey:"Level 4", label:"Level 4 (Team Leader)", rate:32.67},
+        {id:"L5", matchKey:"Level 5", label:"Level 5 (Office Manager)", rate:33.99}
       ],
       penalties:[
         {label:"Saturday (7am–12:30pm only)", mult:1.25},
@@ -786,44 +797,50 @@
   }
 
   // Matches FWC's returned classifications back to our local list by
-  // RANK ORDER (lowest-paid to highest-paid), not by name or code --
-  // different awards spell out classifications differently (some use
-  // short codes like "C10" that happen to match our ids, others use
-  // full text like "Level 1" that won't). Rank order is the one thing
-  // that reliably lines up across every award's structure.
+  // matchKey -- confirmed (against a real FWC response for Manufacturing)
+  // that FWC's classification labels contain the exact classification
+  // code/level as a whole word/phrase (e.g. "C14 / V1" contains "C14").
+  // FWC's list is always LARGER than ours -- awards have more official
+  // levels/streams than this tool's simplified subset models -- so this
+  // looks up each of our classifications individually inside FWC's
+  // fuller list, rather than expecting the two lists to be the same size.
   //
-  // Safety rule: if the number of classifications FWC returns doesn't
-  // match the number we have locally, we DON'T guess -- we skip that
-  // award entirely and leave its built-in rates untouched, and report
-  // the mismatch so it's visible rather than silently wrong.
+  // Safety rule: if a specific classification's matchKey can't be found
+  // in FWC's response, that ONE classification is left on its built-in
+  // rate and reported by name -- not a reason to skip the whole award,
+  // since the other classifications may still have matched fine.
+  function findFwcMatch(matchKey, fwcRows){
+    var pattern = new RegExp("\\b" + matchKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i");
+    return fwcRows.filter(function(row){
+      return row.label && pattern.test(row.label);
+    })[0];
+  }
+
   function applyFwcRates(awardKey, fwcRows){
     var award = AWARDS[awardKey];
     if(!award || !Array.isArray(fwcRows) || fwcRows.length === 0){
-      return { updated: 0, skipped: true, reason: "no data returned" };
-    }
-
-    var localSorted = award.classifications.slice().sort(function(a, b){ return a.rate - b.rate; });
-    var fwcSorted = fwcRows.slice().sort(function(a, b){
-      return (a.classificationLevel || 0) - (b.classificationLevel || 0);
-    });
-
-    if(localSorted.length !== fwcSorted.length){
-      return {
-        updated: 0,
-        skipped: true,
-        reason: "classification count mismatch (local " + localSorted.length + " vs FWC " + fwcSorted.length + ")"
-      };
+      return { updated: 0, skipped: true, reason: "no data returned", unmatched: [] };
     }
 
     var updated = 0;
-    for(var i = 0; i < localSorted.length; i++){
-      var rate = parseFloat(fwcSorted[i].rate);
-      if(!isNaN(rate)){
-        localSorted[i].rate = rate;
+    var unmatched = [];
+
+    award.classifications.forEach(function(local){
+      var match = findFwcMatch(local.matchKey || local.id, fwcRows);
+      var rate = match ? parseFloat(match.rate) : NaN;
+      if(match && !isNaN(rate)){
+        local.rate = rate;
         updated++;
+      } else {
+        unmatched.push(local.id);
       }
+    });
+
+    if(unmatched.length === award.classifications.length){
+      return { updated: 0, skipped: true, reason: "none of this award's classifications were found in FWC's response", unmatched: unmatched };
     }
-    return { updated: updated, skipped: false };
+
+    return { updated: updated, skipped: false, unmatched: unmatched };
   }
 
   function checkForLatestRates(){
@@ -840,6 +857,7 @@
     var totalUpdated = 0;
     var failures = [];
     var skippedAwards = [];
+    var partialAwards = [];
 
     function friendlyHttpError(status){
       if(status === 401 || status === 403) return "couldn't verify access";
@@ -867,6 +885,9 @@
             skippedAwards.push(code + " (" + result.reason + ")");
           } else {
             totalUpdated += result.updated;
+            if(result.unmatched && result.unmatched.length > 0){
+              partialAwards.push(code + " (couldn't find: " + result.unmatched.join(", ") + ")");
+            }
           }
         })
         .catch(function(err){
@@ -882,11 +903,12 @@
       var now = new Date().toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"});
       if(failures.length === awardKeys.length){
         setSyncStatus("Couldn't reach Fair Work just now — still using the standard built-in rates, which is fine to quote from. (" + failures[0] + ")", "err");
-      } else if(failures.length > 0 || skippedAwards.length > 0){
+      } else if(failures.length > 0 || skippedAwards.length > 0 || partialAwards.length > 0){
         var issues = [];
         if(failures.length > 0) issues.push(failures.length + " award(s) didn't update");
         if(skippedAwards.length > 0) issues.push(skippedAwards.length + " award(s) need review: " + skippedAwards.join("; "));
-        setSyncStatus("Updated most rates as at " + now + " — " + issues.join(", ") + ".", "err");
+        if(partialAwards.length > 0) issues.push(partialAwards.length + " award(s) partly matched: " + partialAwards.join("; "));
+        setSyncStatus("Updated " + totalUpdated + " rate(s) as at " + now + " — " + issues.join(", ") + ".", "err");
       } else {
         setSyncStatus("Live rates confirmed as at " + now + " (" + totalUpdated + " rate(s) checked).", "ok");
       }
