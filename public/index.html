@@ -907,21 +907,36 @@
       syncIcon.classList.remove("spin");
       recalc();
 
-      if(totalUpdated > 0){
-        pushSyncToSharedStore();
-      }
-
       var now = new Date().toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"});
+      var baseText, baseMode;
       if(failures.length === awardKeys.length){
-        setSyncStatus("Couldn't reach Fair Work just now — still using the standard built-in rates, which is fine to quote from. (" + failures[0] + ")", "err");
+        baseText = "Couldn't reach Fair Work just now — still using the standard built-in rates, which is fine to quote from. (" + failures[0] + ")";
+        baseMode = "err";
       } else if(failures.length > 0 || skippedAwards.length > 0 || partialAwards.length > 0){
         var issues = [];
         if(failures.length > 0) issues.push(failures.length + " award(s) didn't update");
         if(skippedAwards.length > 0) issues.push(skippedAwards.length + " award(s) need review: " + skippedAwards.join("; "));
         if(partialAwards.length > 0) issues.push(partialAwards.length + " award(s) partly matched: " + partialAwards.join("; "));
-        setSyncStatus("Updated " + totalUpdated + " rate(s) as at " + now + " — " + issues.join(", ") + ".", "err");
+        baseText = "Updated " + totalUpdated + " rate(s) as at " + now + " — " + issues.join(", ") + ".";
+        baseMode = "err";
       } else {
-        setSyncStatus("Live rates confirmed as at " + now + " (" + totalUpdated + " rate(s) checked).", "ok");
+        baseText = "Live rates confirmed as at " + now + " (" + totalUpdated + " rate(s) checked).";
+        baseMode = "ok";
+      }
+
+      if(totalUpdated > 0){
+        // Wait for the shared-store push to actually resolve before
+        // showing a final status -- otherwise a failed save can get
+        // silently overwritten by this success message a moment later.
+        pushSyncToSharedStore(function(pushError){
+          if(pushError){
+            setSyncStatus(baseText + " (Couldn't save for the team yet: " + pushError + ")", "err");
+          } else {
+            setSyncStatus(baseText + " Saved for the whole team.", baseMode);
+          }
+        });
+      } else {
+        setSyncStatus(baseText, baseMode);
       }
     });
   }
@@ -998,7 +1013,7 @@
   var SHARED_RATES_URL = "/api/synced-rates";
   var restoredSyncInfo = null;
 
-  function pushSyncToSharedStore(){
+  function pushSyncToSharedStore(callback){
     try{
       var rates = {};
       Object.keys(AWARDS).forEach(function(key){
@@ -1009,19 +1024,36 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rates: rates })
+      }).then(function(res){
+        if(!res.ok){
+          return res.json().catch(function(){ return {}; }).then(function(body){
+            throw new Error("HTTP " + res.status + (body.error ? " — " + body.error : ""));
+          });
+        }
+      }).then(function(){
+        if(callback) callback(null);
       }).catch(function(e){
         console.warn("Couldn't save to the shared rate store:", e);
+        if(callback) callback(e.message || String(e));
       });
     }catch(e){
       console.warn("Couldn't build payload for the shared rate store:", e);
+      if(callback) callback(e.message || String(e));
     }
   }
 
   function loadSharedSyncOnPageOpen(){
     fetch(SHARED_RATES_URL)
-      .then(function(res){ return res.ok ? res.json() : null; })
+      .then(function(res){
+        return res.json().catch(function(){ return {}; }).then(function(body){
+          if(!res.ok){
+            throw new Error("HTTP " + res.status + (body.error ? " — " + body.error : ""));
+          }
+          return body;
+        });
+      })
       .then(function(data){
-        if(!data || !data.rates) return;
+        if(!data || !data.rates) return; // nothing synced by anyone yet -- expected on first use, stay quiet
         Object.keys(data.rates).forEach(function(key){
           var award = AWARDS[key];
           if(!award) return;
@@ -1036,10 +1068,11 @@
         setSyncStatus("Showing the team's last sync (" + restoredSyncInfo + "). Tap the button to check for anything newer.", "ok");
       })
       .catch(function(e){
-        // Shared store not reachable or not set up yet -- quietly keep
-        // built-in rates. This runs automatically on page load, so it
-        // shouldn't surface an alarming error for something the person
-        // didn't ask for.
+        // A genuine error (bad response, KV not set up, etc) -- unlike
+        // "nothing saved yet" above, this IS worth surfacing, since it's
+        // exactly the kind of thing that needs fixing during setup.
+        console.warn("Couldn't check the shared rate store:", e);
+        setSyncStatus("Couldn't check the team's shared rates just now — using built-in rates. (" + e.message + ")", "err");
       });
   }
 
