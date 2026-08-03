@@ -908,7 +908,7 @@
       syncIcon.classList.remove("spin");
       recalc();
 
-      var now = new Date().toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"});
+      var now = new Date().toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit", timeZone:"Australia/Sydney", timeZoneName:"short"});
       var baseText, baseMode;
       if(failures.length === awardKeys.length){
         baseText = "Couldn't reach Fair Work just now — still using the standard built-in rates, which is fine to quote from. (" + failures[0] + ")";
@@ -1064,7 +1064,7 @@
             }
           });
         });
-        restoredSyncInfo = new Date(data.savedAt).toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"});
+        restoredSyncInfo = new Date(data.savedAt).toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit", timeZone:"Australia/Sydney", timeZoneName:"short"});
         recalc();
         setSyncStatus("Showing the team's last sync (" + restoredSyncInfo + "). Tap the button to check for anything newer.", "ok");
       })
