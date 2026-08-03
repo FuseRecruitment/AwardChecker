@@ -115,14 +115,17 @@ export default async function handler(request) {
     return new Response(null, { headers: corsHeaders() });
   }
 
-  // --- Layer 1: shared secret ---
+  // --- Layer 1: shared secret (optional now) ---
+  // The whole-site password gate in middleware.js already protects this
+  // route -- a logged-in browser's session cookie covers it for free.
+  // This check only activates if you deliberately set PROXY_SHARED_SECRET
+  // as a second layer; leave it unset to rely on the password gate alone.
   const expectedSecret = process.env.PROXY_SHARED_SECRET;
-  if (!expectedSecret) {
-    return json({ error: "PROXY_SHARED_SECRET is not set on this deployment" }, 500);
-  }
-  const providedSecret = request.headers.get("x-proxy-token") || url.searchParams.get("token");
-  if (providedSecret !== expectedSecret) {
-    return json({ error: "Unauthorized" }, 401);
+  if (expectedSecret) {
+    const providedSecret = request.headers.get("x-proxy-token") || url.searchParams.get("token");
+    if (providedSecret !== expectedSecret) {
+      return json({ error: "Unauthorized" }, 401);
+    }
   }
 
   // --- Layer 2: best-effort rate limit ---

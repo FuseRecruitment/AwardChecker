@@ -47,8 +47,6 @@
  * everything by default.
  */
 
-import { NextResponse } from "next/server";
-
 const COOKIE_NAME = "site_auth";
 
 export const config = {
@@ -192,7 +190,7 @@ export default async function middleware(request) {
   // For GET/HEAD/etc, check for a valid session cookie
   const cookie = getCookie(request, COOKIE_NAME);
   if (cookie === expectedPassword) {
-    return NextResponse.next(); // valid session -- let the request through to the actual page/API
+    return; // valid session -- no Response returned means "let this request through as normal"
   }
 
   // No valid cookie -- show the login form instead of the real page
