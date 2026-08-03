@@ -707,10 +707,10 @@
     meat: {
       code:"MA000059", name:"Meat Industry Award",
       classifications:[
-        {id:"MI1", matchKey:"MI1", label:"MI 1 (Entry)", rate:25.74},
-        {id:"MI2", matchKey:"MI2", label:"MI 2 (General Processing)", rate:26.44},
-        {id:"MI4", matchKey:"MI4", label:"MI 4 (Skilled Boner/Slicer)", rate:27.23},
-        {id:"MI6", matchKey:"MI6", label:"MI 6 (Senior/Leading Hand)", rate:27.99}
+        {id:"MI1", matchKey:"MI 1", label:"MI 1 (Entry)", rate:25.74},
+        {id:"MI2", matchKey:"MI 2", label:"MI 2 (General Processing)", rate:26.44},
+        {id:"MI4", matchKey:"MI 4", label:"MI 4 (Skilled Boner/Slicer)", rate:27.23},
+        {id:"MI6", matchKey:"MI 6", label:"MI 6 (Senior/Leading Hand)", rate:27.99}
       ],
       penalties:[
         {label:"Saturday", mult:1.5},
@@ -739,11 +739,18 @@
     },
     construction: {
       code:"MA000020", name:"Building and Construction General On-site Award",
+      // CONFIRMED against a real response: FWC splits "Level 1" into four
+      // sub-levels (a/b/c/d) with different rates. "Level 1" as a matchKey
+      // matches all four -- findFwcMatch takes the first one FWC returns,
+      // which happened to be "level a" ($26.67), matching CW1 exactly.
+      // This relies on FWC's response ordering rather than an explicit
+      // sub-level selector -- worth re-checking if FWC ever changes the
+      // order it returns these in.
       classifications:[
-        {id:"CW1", matchKey:"CW1", label:"CW1/ECW1 (Labourer, Entry)", rate:26.67},
-        {id:"CW2", matchKey:"CW2", label:"CW2/ECW2 (Labourer, Experienced)", rate:27.60},
-        {id:"CW3", matchKey:"CW3", label:"CW3/ECW3 (Tradesperson)", rate:28.85},
-        {id:"CW5", matchKey:"CW5", label:"CW5/ECW5 (Leading Hand)", rate:30.10}
+        {id:"CW1", matchKey:"Level 1", label:"CW1/ECW1 (Labourer, Entry)", rate:26.67},
+        {id:"CW2", matchKey:"Level 2", label:"CW2/ECW2 (Labourer, Experienced)", rate:27.60},
+        {id:"CW3", matchKey:"Level 3", label:"CW3/ECW3 (Tradesperson)", rate:28.85},
+        {id:"CW5", matchKey:"Level 5", label:"CW5/ECW5 (Leading Hand)", rate:30.10}
       ],
       penalties:[
         {label:"Saturday (first 2 hrs)", mult:1.5},
@@ -900,6 +907,10 @@
       syncIcon.classList.remove("spin");
       recalc();
 
+      if(totalUpdated > 0){
+        saveSyncCache();
+      }
+
       var now = new Date().toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"});
       if(failures.length === awardKeys.length){
         setSyncStatus("Couldn't reach Fair Work just now — still using the standard built-in rates, which is fine to quote from. (" + failures[0] + ")", "err");
@@ -918,6 +929,8 @@
   syncRatesBtn.addEventListener("click", checkForLatestRates);
   if(!FWC_PROXY_URL){
     setSyncStatus("Using built-in rates — connect FWC_PROXY_URL in the script to enable live sync.");
+  } else if(restoredSyncInfo){
+    setSyncStatus("Showing rates from your last sync on this device (" + restoredSyncInfo + "). Tap the button to check for anything newer.", "ok");
   }
 
   function fmt(n){
@@ -976,6 +989,49 @@
   var agencyName = document.getElementById("agencyName");
   var roleField = document.getElementById("roleField");
   var weeksField = document.getElementById("weeksField");
+
+  // ---------------- Persist sync across page reloads (this browser only) ----------------
+  var SYNC_CACHE_KEY = "fuseRateCardSync";
+
+  function saveSyncCache(){
+    try{
+      var rates = {};
+      Object.keys(AWARDS).forEach(function(key){
+        rates[key] = {};
+        AWARDS[key].classifications.forEach(function(c){ rates[key][c.id] = c.rate; });
+      });
+      localStorage.setItem(SYNC_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), rates: rates }));
+    }catch(e){
+      // localStorage unavailable (private browsing, quota, disabled) -- fail silently,
+      // the tool just falls back to built-in rates on next load, which is safe.
+    }
+  }
+
+  function loadSyncCache(){
+    try{
+      var raw = localStorage.getItem(SYNC_CACHE_KEY);
+      if(!raw) return null;
+      return JSON.parse(raw);
+    }catch(e){
+      return null;
+    }
+  }
+
+  var restoredSyncInfo = null;
+  (function applyCachedSyncOnLoad(){
+    var cache = loadSyncCache();
+    if(!cache || !cache.rates) return;
+    Object.keys(cache.rates).forEach(function(key){
+      var award = AWARDS[key];
+      if(!award) return;
+      award.classifications.forEach(function(c){
+        if(cache.rates[key][c.id] !== undefined){
+          c.rate = cache.rates[key][c.id];
+        }
+      });
+    });
+    restoredSyncInfo = new Date(cache.savedAt).toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"});
+  })();
 
   populateAwardSelect(awardSelect);
   populateClassSelect(classSelect, awardSelect.value);
