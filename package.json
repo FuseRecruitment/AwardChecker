@@ -2,5 +2,8 @@
   "name": "fuse-rate-card",
   "version": "1.0.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@vercel/kv": "^3.0.0"
+  }
 }

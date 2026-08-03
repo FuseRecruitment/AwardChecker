@@ -908,7 +908,7 @@
       recalc();
 
       if(totalUpdated > 0){
-        saveSyncCache();
+        pushSyncToSharedStore();
       }
 
       var now = new Date().toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"});
@@ -929,8 +929,8 @@
   syncRatesBtn.addEventListener("click", checkForLatestRates);
   if(!FWC_PROXY_URL){
     setSyncStatus("Using built-in rates — connect FWC_PROXY_URL in the script to enable live sync.");
-  } else if(restoredSyncInfo){
-    setSyncStatus("Showing rates from your last sync on this device (" + restoredSyncInfo + "). Tap the button to check for anything newer.", "ok");
+  } else {
+    loadSharedSyncOnPageOpen();
   }
 
   function fmt(n){
@@ -990,48 +990,58 @@
   var roleField = document.getElementById("roleField");
   var weeksField = document.getElementById("weeksField");
 
-  // ---------------- Persist sync across page reloads (this browser only) ----------------
-  var SYNC_CACHE_KEY = "fuseRateCardSync";
+  // ---------------- Shared "last synced" rates (everyone sees the same state) ----------------
+  // Replaces the earlier per-browser localStorage approach: instead of
+  // each person needing to click sync themselves, whoever syncs first
+  // saves it here (Vercel KV, via api/synced-rates.js), and everyone
+  // else's page load picks it up automatically.
+  var SHARED_RATES_URL = "/api/synced-rates";
+  var restoredSyncInfo = null;
 
-  function saveSyncCache(){
+  function pushSyncToSharedStore(){
     try{
       var rates = {};
       Object.keys(AWARDS).forEach(function(key){
         rates[key] = {};
         AWARDS[key].classifications.forEach(function(c){ rates[key][c.id] = c.rate; });
       });
-      localStorage.setItem(SYNC_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), rates: rates }));
-    }catch(e){
-      // localStorage unavailable (private browsing, quota, disabled) -- fail silently,
-      // the tool just falls back to built-in rates on next load, which is safe.
-    }
-  }
-
-  function loadSyncCache(){
-    try{
-      var raw = localStorage.getItem(SYNC_CACHE_KEY);
-      if(!raw) return null;
-      return JSON.parse(raw);
-    }catch(e){
-      return null;
-    }
-  }
-
-  var restoredSyncInfo = null;
-  (function applyCachedSyncOnLoad(){
-    var cache = loadSyncCache();
-    if(!cache || !cache.rates) return;
-    Object.keys(cache.rates).forEach(function(key){
-      var award = AWARDS[key];
-      if(!award) return;
-      award.classifications.forEach(function(c){
-        if(cache.rates[key][c.id] !== undefined){
-          c.rate = cache.rates[key][c.id];
-        }
+      fetch(SHARED_RATES_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rates: rates })
+      }).catch(function(e){
+        console.warn("Couldn't save to the shared rate store:", e);
       });
-    });
-    restoredSyncInfo = new Date(cache.savedAt).toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"});
-  })();
+    }catch(e){
+      console.warn("Couldn't build payload for the shared rate store:", e);
+    }
+  }
+
+  function loadSharedSyncOnPageOpen(){
+    fetch(SHARED_RATES_URL)
+      .then(function(res){ return res.ok ? res.json() : null; })
+      .then(function(data){
+        if(!data || !data.rates) return;
+        Object.keys(data.rates).forEach(function(key){
+          var award = AWARDS[key];
+          if(!award) return;
+          award.classifications.forEach(function(c){
+            if(data.rates[key][c.id] !== undefined){
+              c.rate = data.rates[key][c.id];
+            }
+          });
+        });
+        restoredSyncInfo = new Date(data.savedAt).toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"});
+        recalc();
+        setSyncStatus("Showing the team's last sync (" + restoredSyncInfo + "). Tap the button to check for anything newer.", "ok");
+      })
+      .catch(function(e){
+        // Shared store not reachable or not set up yet -- quietly keep
+        // built-in rates. This runs automatically on page load, so it
+        // shouldn't surface an alarming error for something the person
+        // didn't ask for.
+      });
+  }
 
   populateAwardSelect(awardSelect);
   populateClassSelect(classSelect, awardSelect.value);
