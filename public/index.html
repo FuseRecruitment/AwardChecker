@@ -845,7 +845,8 @@
       if(status === 401 || status === 403) return "couldn't verify access";
       if(status === 404) return "not found in the Fair Work database";
       if(status === 429) return "too many requests just now";
-      if(status >= 500) return "Fair Work's system is having issues";
+      if(status === 502) return "couldn't reach Fair Work's system";
+      if(status >= 500) return "something went wrong on our side (check the Vercel function logs)";
       return "couldn't connect";
     }
 
