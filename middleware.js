@@ -164,8 +164,13 @@ export default async function middleware(request) {
     });
   }
 
-  // Handle password form submission
-  if (request.method === "POST") {
+  // Handle password form submission -- but ONLY if this POST actually
+  // looks like the login form (content-type: application/x-www-form-urlencoded).
+  // Without this check, ANY POST anywhere on the site (including the
+  // tool's own JSON calls to save synced rates) got treated as a login
+  // attempt, tried to parse JSON as form data, and crashed with a 500.
+  const contentType = request.headers.get("content-type") || "";
+  if (request.method === "POST" && contentType.includes("application/x-www-form-urlencoded")) {
     const formData = await request.formData();
     const submitted = formData.get("password");
 
@@ -187,7 +192,9 @@ export default async function middleware(request) {
     });
   }
 
-  // For GET/HEAD/etc, check for a valid session cookie
+  // For everything else (GET/HEAD, and any POST that isn't the login
+  // form -- e.g. the tool's own API calls), check for a valid session
+  // cookie instead.
   const cookie = getCookie(request, COOKIE_NAME);
   if (cookie === expectedPassword) {
     return; // valid session -- no Response returned means "let this request through as normal"

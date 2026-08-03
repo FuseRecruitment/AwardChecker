@@ -793,6 +793,7 @@
   // Leave blank to keep the button disabled with a setup message.
   var FWC_PROXY_URL = "/api/award-rates"; // relative path works if this file is served from public/ in the same Vercel project as api/award-rates.js
   var FWC_PROXY_TOKEN = ""; // must match PROXY_SHARED_SECRET set in Vercel -- generate one with `openssl rand -hex 24` or a password manager
+  var SHARED_RATES_URL = "/api/synced-rates"; // moved up here -- was previously declared after its first use, leaving it `undefined` on page load
 
   var syncRatesBtn = document.getElementById("syncRatesBtn");
   var syncStatus = document.getElementById("syncStatus");
@@ -1008,9 +1009,9 @@
   // ---------------- Shared "last synced" rates (everyone sees the same state) ----------------
   // Replaces the earlier per-browser localStorage approach: instead of
   // each person needing to click sync themselves, whoever syncs first
-  // saves it here (Vercel KV, via api/synced-rates.js), and everyone
-  // else's page load picks it up automatically.
-  var SHARED_RATES_URL = "/api/synced-rates";
+  // saves it here (via api/synced-rates.js), and everyone else's page
+  // load picks it up automatically. (SHARED_RATES_URL is declared up
+  // near FWC_PROXY_URL, since it's used before this point in the script.)
   var restoredSyncInfo = null;
 
   function pushSyncToSharedStore(callback){
