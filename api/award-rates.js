@@ -181,7 +181,23 @@ export default async function handler(request) {
         operativeFrom: row.operative_from
       }));
 
-    return json({ award: awardCode, awardFixedId: fixedId, classifications: hourlyRows }, 200);
+    // FWC's pay-rates endpoint returns every historical version of each
+    // classification's rate, not just the current one -- some of these
+    // awards go back to 2010, so this can be 10-20+ rows per
+    // classification. Keep only the most recent version that's already
+    // in effect (operative_from <= today) for each classification_fixed_id.
+    const today = new Date().toISOString().slice(0, 10);
+    const currentByClassification = new Map();
+    hourlyRows.forEach((row) => {
+      if (!row.operativeFrom || row.operativeFrom.slice(0, 10) > today) return; // not yet in effect
+      const existing = currentByClassification.get(row.classificationFixedId);
+      if (!existing || row.operativeFrom > existing.operativeFrom) {
+        currentByClassification.set(row.classificationFixedId, row);
+      }
+    });
+    const currentRows = Array.from(currentByClassification.values());
+
+    return json({ award: awardCode, awardFixedId: fixedId, classifications: currentRows }, 200);
   } catch (err) {
     return json({ error: "Proxy fetch failed", detail: String(err) }, 502);
   }
