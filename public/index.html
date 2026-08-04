@@ -204,6 +204,8 @@
 
   /* ---------- Margin fuse slider ---------- */
   .margin-row{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
+  .multiplier-row{ display:flex; align-items:baseline; justify-content:space-between; margin-top:14px; }
+  .multiplier-value{ font-family:var(--mono); font-size:18px; font-weight:700; color:var(--ink); }
   .margin-value{ font-family:var(--mono); font-size:24px; font-weight:700; color:var(--ink); }
   .fuse-track-wrap{ position:relative; padding:10px 0 4px; }
   input[type=range]{
@@ -352,6 +354,18 @@
   .rf-value{ font-family:var(--mono); font-size:17px; font-weight:800; color:var(--ink); }
   .result-box.pass .rf-value{ color:var(--good); }
   .result-box.fail .rf-value{ color:var(--bad); }
+
+  .log-empty{ text-align:center; color:var(--muted); font-size:13px; padding:20px 0; }
+  .log-entry{
+    border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px;
+  }
+  .log-entry.ok{ border-left:4px solid var(--good); }
+  .log-entry.err{ border-left:4px solid var(--bad); }
+  .log-entry-top{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .log-entry-date{ font-size:12px; font-weight:800; color:var(--ink); }
+  .log-entry-count{ font-family:var(--mono); font-size:12px; color:var(--muted); }
+  .log-entry-detail{ margin-top:6px; font-size:12px; color:var(--muted); line-height:1.6; }
+  .log-entry-detail b{ color:var(--ink); }
   .fw-warning{
     margin-top:14px; background:var(--ink); color:#fff; border-radius:10px; padding:13px 14px;
     font-size:12.5px; line-height:1.55; display:flex; gap:10px; align-items:flex-start;
@@ -414,6 +428,7 @@
 <div class="tabbar">
   <button class="tabbtn active" data-tab="ratecard" id="tabbtn-ratecard"><span class="dot"></span>Rate Card</button>
   <button class="tabbtn" data-tab="awardcheck" id="tabbtn-awardcheck"><span class="dot"></span>Award Check</button>
+  <button class="tabbtn" data-tab="synclog" id="tabbtn-synclog"><span class="dot"></span>Sync Log</button>
 </div>
 
 <main>
@@ -467,20 +482,27 @@
 
       <div style="margin-top:14px;">
         <div class="margin-row">
-          <label class="field-label" style="margin:0;">Margin
-            <button type="button" class="help-tip" aria-expanded="false" data-help="margin-help">?</button>
+          <label class="field-label" style="margin:0;">Multiplier
+            <button type="button" class="help-tip" aria-expanded="false" data-help="multiplier-help">?</button>
           </label>
-          <span class="margin-value" id="marginValue">25%</span>
+          <span class="margin-value" id="multiplierValue">1.50×</span>
         </div>
-        <div class="help-text" id="margin-help">This is what Fuse adds on top of cost as profit. Drag right to charge more, left to charge less. Below 20% you'll get a warning — that's usually too thin to cover overheads.</div>
+        <div class="help-text" id="multiplier-help">The charge rate as a straight multiple of the base pay rate — e.g. "1.5×" means the charge rate is 1.5 times the award rate. This is the number that sets the charge rate; margin (below) is the same relationship shown as a percentage instead, purely for reference — they're not the same percentage as each other.</div>
         <div class="fuse-track-wrap">
-          <input type="range" id="marginSlider" min="10" max="60" value="25" step="1">
-          <div class="fuse-ticks"><span>10%</span><span>60%</span></div>
+          <input type="range" id="multiplierSlider" min="1.1" max="5.0" value="1.5" step="0.05">
+          <div class="fuse-ticks"><span>1.1×</span><span>5.0×</span></div>
         </div>
         <div class="margin-alert" id="marginAlert">
           <span class="ico">⚠</span>
           <span>Margin is below 20% minimum — this quote may not cover overheads. Review before sending to a client.</span>
         </div>
+        <div class="multiplier-row">
+          <span class="field-label" style="margin:0;">Margin (for reference)
+            <button type="button" class="help-tip" aria-expanded="false" data-help="margin-help">?</button>
+          </span>
+          <span class="multiplier-value" id="marginValue">25%</span>
+        </div>
+        <div class="help-text" id="margin-help">Profit as a percentage of the charge rate, calculated from the multiplier above — not something you set directly. A 20% margin and a 20% mark-up (multiplier) aren't the same number, which is why both are shown.</div>
       </div>
 
       <div class="readout-grid">
@@ -645,6 +667,30 @@
       <div class="fw-warning" id="fwWarning" style="display:none;">
         <span>⚠</span>
         <span>Seek payroll advice immediately. Fair Work penalties start at <b>$18,780</b> per contravention.</span>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============ SYNC LOG TAB ============ -->
+  <section class="tabpanel" id="tab-synclog">
+
+    <details class="howto">
+      <summary>How to use this</summary>
+      <div class="howto-body">
+        <ol>
+          <li>Every time anyone in the team clicks "Check for latest award rates" on the Rate Card tab, a record is added here — shared across everyone, not just your own browser.</li>
+          <li>Each entry shows when the sync ran, how many rates were updated, and whether any awards needed review.</li>
+          <li>There's no individual login in this tool, so entries show <b>when</b> and <b>what</b> happened, not <b>who</b> ran it.</li>
+        </ol>
+      </div>
+    </details>
+
+    <div class="card">
+      <h2><span class="num">01</span>Sync history</h2>
+      <button class="ghost-btn" id="refreshLogBtn" style="margin-top:0;">Refresh log</button>
+      <div id="syncLogList" style="margin-top:14px;">
+        <div class="log-empty" id="syncLogEmpty">No syncs recorded yet.</div>
       </div>
     </div>
 
@@ -925,6 +971,17 @@
         baseMode = "ok";
       }
 
+      // Log every sync attempt, whatever the outcome -- a fully failed
+      // attempt is still worth a record for the team to see.
+      pushLogEntry({
+        awardsAttempted: awardKeys.length,
+        totalUpdated: totalUpdated,
+        failures: failures,
+        skippedAwards: skippedAwards,
+        partialAwards: partialAwards,
+        outcome: baseMode
+      });
+
       if(totalUpdated > 0){
         // Wait for the shared-store push to actually resolve before
         // showing a final status -- otherwise a failed save can get
@@ -968,6 +1025,10 @@
     if(m >= 1) m = 0.99;
     return cost / (1 - m);
   }
+  // Primary calculation now: multiplier applied directly to base pay
+  // rate. See the ASSUMPTION note in recalc() if this needs to apply
+  // to cost-to-agency instead once that's confirmed.
+  function chargeFromMultiplier(pay, multiplier){ return pay * multiplier; }
 
   // ---------------- Populate selects ----------------
   function populateAwardSelect(sel){
@@ -993,7 +1054,7 @@
   var awardSelect = document.getElementById("awardSelect");
   var classSelect = document.getElementById("classSelect");
   var empTypeSeg = document.getElementById("empTypeSeg");
-  var marginSlider = document.getElementById("marginSlider");
+  var multiplierSlider = document.getElementById("multiplierSlider");
   var marginValue = document.getElementById("marginValue");
   var marginAlert = document.getElementById("marginAlert");
   var costValue = document.getElementById("costValue");
@@ -1077,6 +1138,72 @@
       });
   }
 
+  // ---------------- Sync log (shared, third tab) ----------------
+  var SYNC_LOG_URL = "/api/sync-log";
+
+  function pushLogEntry(entry){
+    fetch(SYNC_LOG_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entry)
+    }).catch(function(e){
+      console.warn("Couldn't save sync log entry:", e);
+    });
+  }
+
+  function renderSyncLog(entries){
+    var list = document.getElementById("syncLogList");
+    var empty = document.getElementById("syncLogEmpty");
+    if(!entries || entries.length === 0){
+      list.innerHTML = "";
+      list.appendChild(empty);
+      return;
+    }
+    list.innerHTML = "";
+    entries.forEach(function(entry){
+      var when = entry.loggedAt ? new Date(entry.loggedAt).toLocaleString("en-AU", {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit", timeZone:"Australia/Sydney", timeZoneName:"short"}) : "Unknown time";
+      var div = document.createElement("div");
+      div.className = "log-entry " + (entry.outcome === "ok" ? "ok" : "err");
+
+      var detailParts = [];
+      if(entry.failures && entry.failures.length > 0){
+        detailParts.push("<div><b>Didn't reach FWC:</b> " + entry.failures.join("; ") + "</div>");
+      }
+      if(entry.skippedAwards && entry.skippedAwards.length > 0){
+        detailParts.push("<div><b>Skipped (needs review):</b> " + entry.skippedAwards.join("; ") + "</div>");
+      }
+      if(entry.partialAwards && entry.partialAwards.length > 0){
+        detailParts.push("<div><b>Partly matched:</b> " + entry.partialAwards.join("; ") + "</div>");
+      }
+
+      div.innerHTML =
+        "<div class='log-entry-top'>" +
+          "<span class='log-entry-date'>" + when + "</span>" +
+          "<span class='log-entry-count'>" + (entry.totalUpdated || 0) + " rate(s) updated</span>" +
+        "</div>" +
+        (detailParts.length > 0 ? "<div class='log-entry-detail'>" + detailParts.join("") + "</div>" : "");
+      list.appendChild(div);
+    });
+  }
+
+  function loadSyncLog(){
+    var list = document.getElementById("syncLogList");
+    list.innerHTML = "<div class='log-empty'>Loading…</div>";
+    fetch(SYNC_LOG_URL)
+      .then(function(res){
+        return res.json().catch(function(){ return {}; }).then(function(body){
+          if(!res.ok) throw new Error("HTTP " + res.status + (body.error ? " — " + body.error : ""));
+          return body;
+        });
+      })
+      .then(function(data){
+        renderSyncLog(data.entries || []);
+      })
+      .catch(function(e){
+        list.innerHTML = "<div class='log-empty'>Couldn't load the sync log (" + e.message + ").</div>";
+      });
+  }
+
   populateAwardSelect(awardSelect);
   populateClassSelect(classSelect, awardSelect.value);
 
@@ -1108,7 +1235,7 @@
     recalc();
   });
   classSelect.addEventListener("change", recalc);
-  marginSlider.addEventListener("input", recalc);
+  multiplierSlider.addEventListener("input", recalc);
   clientName.addEventListener("input", recalc);
   agencyName.addEventListener("input", recalc);
   roleField.addEventListener("input", recalc);
@@ -1119,10 +1246,21 @@
     var classId = classSelect.value;
     var pay = baseRate(award, classId, currentEmpType);
     var cost = costFromPay(pay);
-    var marginPct = parseFloat(marginSlider.value);
-    var charge = chargeFromCost(cost, marginPct);
 
-    marginValue.textContent = marginPct + "%";
+    // Multiplier is the primary control (slider, 1.1x-5.0x). Charge is
+    // calculated directly from it; margin is DERIVED afterwards purely
+    // for reference/the safety warning, not the other way around.
+    // ASSUMPTION PENDING CONFIRMATION: multiplier is applied against the
+    // BASE PAY RATE (before oncosts), i.e. charge = pay * multiplier.
+    // If it should instead apply to cost-to-agency (pay + oncosts),
+    // this is the one line to change: chargeFromMultiplier(pay, ...)
+    // would become chargeFromMultiplier(cost, ...).
+    var multiplier = parseFloat(multiplierSlider.value);
+    var charge = chargeFromMultiplier(pay, multiplier);
+    var marginPct = charge > 0 ? ((charge - cost) / charge) * 100 : 0;
+
+    document.getElementById("multiplierValue").textContent = multiplier.toFixed(2) + "×";
+    marginValue.textContent = marginPct.toFixed(1) + "%";
     if(marginPct < MIN_MARGIN_WARN){
       marginAlert.classList.add("show");
     } else {
@@ -1141,16 +1279,16 @@
     document.getElementById("bdSuper").textContent = fmt(superAmt) + "/hr";
     document.getElementById("bdWorkcover").textContent = fmt(workcoverAmt) + "/hr";
     document.getElementById("bdPayroll").textContent = fmt(payrollAmt) + "/hr";
-    document.getElementById("bdMarginPct").textContent = marginPct;
+    document.getElementById("bdMarginPct").textContent = marginPct.toFixed(1);
     document.getElementById("bdMarginDollar").textContent = fmt(marginDollar) + "/hr";
 
-    // Penalty table
+    // Penalty table -- same multiplier applied to each penalty-loaded
+    // pay rate, consistent with how the ordinary charge rate is derived.
     penaltyAwardName.textContent = award.name;
     penaltyBody.innerHTML = "";
     award.penalties.forEach(function(p){
       var pPay = pay * p.mult;
-      var pCost = costFromPay(pPay);
-      var pCharge = chargeFromCost(pCost, marginPct);
+      var pCharge = chargeFromMultiplier(pPay, multiplier);
       var tr = document.createElement("tr");
       tr.innerHTML =
         "<td>" + p.label + "</td>" +
@@ -1200,7 +1338,7 @@
 
     window._fuseState = {
       award: award, classId: classId, cls: cls, empType: currentEmpType,
-      pay: pay, cost: cost, charge: charge, marginPct: marginPct,
+      pay: pay, cost: cost, charge: charge, marginPct: marginPct, multiplier: multiplier,
       agency: agencyName.value.trim() || "Fuse Recruitment",
       client: clientName.value.trim(), role: role, weeks: weeks
     };
@@ -1248,15 +1386,14 @@
     lines.push(s.client ? ("Prepared for: " + s.client) : "");
     lines.push(award.name + " [" + award.code + "]");
     lines.push("Classification: " + (s.cls ? s.cls.label : "—") + " · " + (s.empType === "casual" ? "Casual (+25%)" : "Permanent/Full-time"));
-    lines.push("Margin: " + s.marginPct + "%");
+    lines.push("Multiplier: " + s.multiplier.toFixed(2) + "× (margin: " + s.marginPct.toFixed(1) + "%)");
     lines.push("");
     lines.push("Ordinary time — Cost/hr: " + fmt(s.cost) + " · Charge/hr: " + fmt(s.charge));
     lines.push("");
     lines.push("Penalty rates (charge/hr):");
     award.penalties.forEach(function(p){
       var pPay = s.pay * p.mult;
-      var pCost = costFromPay(pPay);
-      var pCharge = chargeFromCost(pCost, s.marginPct);
+      var pCharge = chargeFromMultiplier(pPay, s.multiplier);
       lines.push("  " + p.label + " (" + p.mult + "×): " + fmt(pCharge));
     });
     copyText(lines.filter(Boolean).join("\n"), document.getElementById("copyRatesToast"));
@@ -1290,8 +1427,13 @@
       btn.classList.add("active");
       document.querySelectorAll(".tabpanel").forEach(function(p){ p.classList.remove("active"); });
       document.getElementById("tab-" + btn.getAttribute("data-tab")).classList.add("active");
+      if(btn.getAttribute("data-tab") === "synclog"){
+        loadSyncLog();
+      }
     });
   });
+
+  document.getElementById("refreshLogBtn").addEventListener("click", loadSyncLog);
 
   // ---------------- Award Check tab ----------------
   var acAwardSelect = document.getElementById("acAwardSelect");
