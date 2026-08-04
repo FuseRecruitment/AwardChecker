@@ -491,27 +491,27 @@
 
       <div style="margin-top:14px;">
         <div class="margin-row">
-          <label class="field-label" style="margin:0;">Multiplier
-            <button type="button" class="help-tip" aria-expanded="false" data-help="multiplier-help">?</button>
+          <label class="field-label" style="margin:0;">Margin
+            <button type="button" class="help-tip" aria-expanded="false" data-help="margin-help">?</button>
           </label>
-          <span class="margin-value" id="multiplierValue">1.50×</span>
+          <span class="margin-value" id="marginValue">25%</span>
         </div>
-        <div class="help-text" id="multiplier-help">The charge rate as a straight multiple of the base pay rate — e.g. "1.5×" means the charge rate is 1.5 times the award rate. This is the number that sets the charge rate; margin (below) is the same relationship shown as a percentage instead, purely for reference — they're not the same percentage as each other.</div>
+        <div class="help-text" id="margin-help">This is what Fuse adds on top of cost as profit. Drag right to charge more, left to charge less. Below 20% you'll get a warning — that's usually too thin to cover overheads.</div>
         <div class="fuse-track-wrap">
-          <input type="range" id="multiplierSlider" min="1.1" max="5.0" value="1.5" step="0.05">
-          <div class="fuse-ticks"><span>1.1×</span><span>5.0×</span></div>
+          <input type="range" id="marginSlider" min="10" max="60" value="25" step="1">
+          <div class="fuse-ticks"><span>10%</span><span>60%</span></div>
         </div>
         <div class="margin-alert" id="marginAlert">
           <span class="ico">⚠</span>
           <span>Margin is below 20% minimum — this quote may not cover overheads. Review before sending to a client.</span>
         </div>
         <div class="multiplier-row">
-          <span class="field-label" style="margin:0;">Margin (for reference)
-            <button type="button" class="help-tip" aria-expanded="false" data-help="margin-help">?</button>
+          <span class="field-label" style="margin:0;">Multiplier (for reference)
+            <button type="button" class="help-tip" aria-expanded="false" data-help="multiplier-help">?</button>
           </span>
-          <span class="multiplier-value" id="marginValue">25%</span>
+          <span class="multiplier-value" id="multiplierValue">1.00×</span>
         </div>
-        <div class="help-text" id="margin-help">Profit as a percentage of the charge rate, calculated from the multiplier above — not something you set directly. A 20% margin and a 20% mark-up (multiplier) aren't the same number, which is why both are shown.</div>
+        <div class="help-text" id="multiplier-help">The charge rate as a straight multiple of the base pay rate — e.g. "1.5×" means the charge rate is 1.5 times the award rate. This is calculated from the margin above, not something you set directly. A 20% margin and a 20% mark-up (multiplier) aren't the same number, which is why both are shown.</div>
       </div>
 
       <div class="readout-grid">
@@ -1072,7 +1072,7 @@
   var awardSelect = document.getElementById("awardSelect");
   var classSelect = document.getElementById("classSelect");
   var empTypeSeg = document.getElementById("empTypeSeg");
-  var multiplierSlider = document.getElementById("multiplierSlider");
+  var marginSlider = document.getElementById("marginSlider");
   var marginValue = document.getElementById("marginValue");
   var marginAlert = document.getElementById("marginAlert");
   var costValue = document.getElementById("costValue");
@@ -1294,7 +1294,7 @@
     recalc();
   });
   classSelect.addEventListener("change", recalc);
-  multiplierSlider.addEventListener("input", recalc);
+  marginSlider.addEventListener("input", recalc);
   clientName.addEventListener("input", recalc);
   agencyName.addEventListener("input", recalc);
   roleField.addEventListener("input", recalc);
@@ -1306,20 +1306,15 @@
     var pay = baseRate(award, classId, currentEmpType);
     var cost = costFromPay(pay);
 
-    // Multiplier is the primary control (slider, 1.1x-5.0x). Charge is
-    // calculated directly from it; margin is DERIVED afterwards purely
-    // for reference/the safety warning, not the other way around.
-    // ASSUMPTION PENDING CONFIRMATION: multiplier is applied against the
-    // BASE PAY RATE (before oncosts), i.e. charge = pay * multiplier.
-    // If it should instead apply to cost-to-agency (pay + oncosts),
-    // this is the one line to change: chargeFromMultiplier(pay, ...)
-    // would become chargeFromMultiplier(cost, ...).
-    var multiplier = parseFloat(multiplierSlider.value);
-    var charge = chargeFromMultiplier(pay, multiplier);
-    var marginPct = charge > 0 ? ((charge - cost) / charge) * 100 : 0;
+    // Margin is the primary control again (slider, 10%-60%). Multiplier
+    // is DERIVED afterwards purely for reference, not the other way
+    // around -- this was flipped for a while but reverted back.
+    var marginPct = parseFloat(marginSlider.value);
+    var charge = chargeFromCost(cost, marginPct);
+    var multiplier = pay > 0 ? (charge / pay) : 0;
 
     document.getElementById("multiplierValue").textContent = multiplier.toFixed(2) + "×";
-    marginValue.textContent = marginPct.toFixed(1) + "%";
+    marginValue.textContent = marginPct + "%";
     if(marginPct < MIN_MARGIN_WARN){
       marginAlert.classList.add("show");
     } else {
@@ -1338,16 +1333,17 @@
     document.getElementById("bdSuper").textContent = fmt(superAmt) + "/hr";
     document.getElementById("bdWorkcover").textContent = fmt(workcoverAmt) + "/hr";
     document.getElementById("bdPayroll").textContent = fmt(payrollAmt) + "/hr";
-    document.getElementById("bdMarginPct").textContent = marginPct.toFixed(1);
+    document.getElementById("bdMarginPct").textContent = marginPct;
     document.getElementById("bdMarginDollar").textContent = fmt(marginDollar) + "/hr";
 
-    // Penalty table -- same multiplier applied to each penalty-loaded
-    // pay rate, consistent with how the ordinary charge rate is derived.
+    // Penalty table -- same margin percentage applied to each
+    // penalty-loaded pay rate's cost, consistent with the ordinary rate.
     penaltyAwardName.textContent = award.name;
     penaltyBody.innerHTML = "";
     award.penalties.forEach(function(p){
       var pPay = pay * p.mult;
-      var pCharge = chargeFromMultiplier(pPay, multiplier);
+      var pCost = costFromPay(pPay);
+      var pCharge = chargeFromCost(pCost, marginPct);
       var tr = document.createElement("tr");
       tr.innerHTML =
         "<td>" + p.label + "</td>" +
@@ -1445,14 +1441,15 @@
     lines.push(s.client ? ("Prepared for: " + s.client) : "");
     lines.push(award.name + " [" + award.code + "]");
     lines.push("Classification: " + (s.cls ? s.cls.label : "—") + " · " + (s.empType === "casual" ? "Casual (+25%)" : "Permanent/Full-time"));
-    lines.push("Multiplier: " + s.multiplier.toFixed(2) + "× (margin: " + s.marginPct.toFixed(1) + "%)");
+    lines.push("Margin: " + s.marginPct + "% (multiplier: " + s.multiplier.toFixed(2) + "×)");
     lines.push("");
     lines.push("Ordinary time — Cost/hr: " + fmt(s.cost) + " · Charge/hr: " + fmt(s.charge));
     lines.push("");
     lines.push("Penalty rates (charge/hr):");
     award.penalties.forEach(function(p){
       var pPay = s.pay * p.mult;
-      var pCharge = chargeFromMultiplier(pPay, s.multiplier);
+      var pCost = costFromPay(pPay);
+      var pCharge = chargeFromCost(pCost, s.marginPct);
       lines.push("  " + p.label + " (" + p.mult + "×): " + fmt(pCharge));
     });
     copyText(lines.filter(Boolean).join("\n"), document.getElementById("copyRatesToast"));
