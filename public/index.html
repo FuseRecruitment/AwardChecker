@@ -104,24 +104,33 @@
   }
   .agency-field input::placeholder{ color:#9AA6B2; font-weight:500; }
 
-  /* ---------- Tabs ---------- */
-  .tabbar{
-    display:flex; gap:6px; padding:12px 14px 0;
-    max-width:720px; margin:0 auto;
+  /* ---------- Sidebar shell layout ---------- */
+  /* Tabs now live in a left-hand sidebar rather than a horizontal bar
+     above the content. This intentionally goes wider than a single
+     mobile screen -- the content column keeps the same 720px width it
+     always had, the sidebar is simply added alongside it. */
+  .app-shell{
+    display:flex; align-items:flex-start; gap:20px;
+    max-width:940px; margin:0 auto; padding:20px 14px;
   }
+  .side-tabs{
+    flex:0 0 200px; display:flex; flex-direction:column; gap:6px;
+    position:sticky; top:20px;
+  }
+  .app-content{ flex:1 1 720px; max-width:720px; min-width:0; }
+
   .tabbtn{
-    flex:1; border:none; cursor:pointer; padding:12px 10px;
-    background:var(--card); color:var(--muted); font-weight:700; font-size:13.5px;
-    border-radius:12px 12px 0 0; border:1px solid var(--line); border-bottom:none;
-    position:relative; top:1px; font-family:var(--sans);
+    width:100%; text-align:left; border:1px solid var(--line); cursor:pointer;
+    padding:12px 14px; background:var(--card); color:var(--muted);
+    font-weight:700; font-size:13.5px; border-radius:10px; font-family:var(--sans);
   }
-  .tabbtn.active{ color:var(--ink); background:var(--surface); }
+  .tabbtn.active{ color:var(--ink); background:var(--surface); border-color:var(--spark); }
   .tabbtn .dot{
     display:inline-block; width:6px; height:6px; border-radius:50%;
     background:var(--spark); margin-right:6px; vertical-align:middle;
   }
 
-  main{ max-width:720px; margin:0 auto; padding:0 14px 24px; }
+  main{ padding:0 0 24px; }
   .tabpanel{ display:none; }
   .tabpanel.active{ display:block; }
 
@@ -185,6 +194,13 @@
   .field{ margin-bottom:14px; }
   .field:last-child{ margin-bottom:0; }
   .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  /* Yellow editable fields -- matches the reference spreadsheet's own
+     convention for "this is an input, everything else is calculated." */
+  input.calc-editable{
+    background:#FFFBE6; border-color:#E8D477;
+  }
+  input.calc-editable:focus{ background:#fff; }
 
   .segmented{ display:flex; border:1.5px solid var(--line); border-radius:10px; overflow:hidden; }
   .segmented button{
@@ -396,7 +412,6 @@
   /* ---------- Mobile-first enhancements for larger viewports ---------- */
   @media (min-width:640px){
     main{ padding:0 20px 28px; }
-    .tabbar{ padding:14px 20px 0; }
     .card{ padding:22px; margin-top:16px; }
     .card h2{ font-size:13.5px; }
     .readout .rvalue{ font-size:27px; }
@@ -409,6 +424,14 @@
 </head>
 <body>
 
+<div class="app-shell">
+<nav class="side-tabs">
+  <button class="tabbtn active" data-tab="ratecard" id="tabbtn-ratecard"><span class="dot"></span>Rate Card</button>
+  <button class="tabbtn" data-tab="awardcheck" id="tabbtn-awardcheck"><span class="dot"></span>Award Check</button>
+  <button class="tabbtn" data-tab="calculator" id="tabbtn-calculator"><span class="dot"></span>Calculator</button>
+  <button class="tabbtn" data-tab="synclog" id="tabbtn-synclog"><span class="dot"></span>Sync Log</button>
+</nav>
+<div class="app-content">
 <header class="top">
 <div class="header-inner">
   <div class="brandrow">
@@ -433,12 +456,6 @@
   </div>
 </div>
 </header>
-
-<div class="tabbar">
-  <button class="tabbtn active" data-tab="ratecard" id="tabbtn-ratecard"><span class="dot"></span>Rate Card</button>
-  <button class="tabbtn" data-tab="awardcheck" id="tabbtn-awardcheck"><span class="dot"></span>Award Check</button>
-  <button class="tabbtn" data-tab="synclog" id="tabbtn-synclog"><span class="dot"></span>Sync Log</button>
-</div>
 
 <main>
 
@@ -681,6 +698,92 @@
 
   </section>
 
+  <!-- ============ CALCULATOR TAB ============ -->
+  <section class="tabpanel" id="tab-calculator">
+
+    <details class="howto">
+      <summary>How to use this</summary>
+      <div class="howto-body">
+        <ol>
+          <li>Pick the state — payroll tax differs by state, so the calculation changes underneath.</li>
+          <li>Choose which method to calculate by: <b>$ Margin</b> (you set a flat dollar profit, charge rate is built up from cost) or <b>Multiple</b> (you set a multiple of base pay, margin is whatever's left over).</li>
+          <li>Yellow fields are editable — everything else updates automatically.</li>
+        </ol>
+      </div>
+    </details>
+
+    <div class="card">
+      <h2><span class="num">01</span>State &amp; method</h2>
+      <div class="field">
+        <label class="field-label">State</label>
+        <div class="segmented" id="calcStateSeg">
+          <button data-val="VIC" class="active">VIC</button>
+          <button data-val="NSW">NSW</button>
+          <button data-val="QLD">QLD</button>
+          <button data-val="SA">SA</button>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label class="field-label">Method
+          <button type="button" class="help-tip" aria-expanded="false" data-help="calcMethod-help">?</button>
+        </label>
+        <div class="segmented" id="calcMethodSeg">
+          <button data-val="margin" class="active">$ Margin</button>
+          <button data-val="multiple">Multiple</button>
+        </div>
+      </div>
+      <div class="help-text" id="calcMethod-help">$ Margin builds the charge rate up from cost plus a flat dollar profit you set. Multiple instead sets the charge rate directly as base pay × a multiple, and margin becomes whatever's left over — the two methods usually give slightly different results for the same role.</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">02</span>Inputs</h2>
+      <div class="grid2">
+        <div class="field">
+          <label class="field-label">Base pay ($/hr)</label>
+          <input type="number" id="calcBasePay" class="calc-editable" value="33.50" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label class="field-label">Workers comp (%)</label>
+          <input type="number" id="calcWorkersRate" class="calc-editable" value="5.0" min="0" step="0.1">
+        </div>
+      </div>
+
+      <div class="field calc-margin-only">
+        <label class="field-label">$ Margin ($/hr)</label>
+        <input type="number" id="calcDollarMargin" class="calc-editable" value="6.50" min="0" step="0.01">
+      </div>
+      <div class="field calc-margin-only">
+        <label class="field-label">Insurance (%)</label>
+        <input type="number" id="calcInsuranceRate" class="calc-editable" value="2.0" min="0" step="0.1">
+      </div>
+
+      <div class="field calc-multiple-only" style="display:none;">
+        <label class="field-label">Multiple</label>
+        <input type="number" id="calcMultiple" class="calc-editable" value="1.4" min="1" step="0.01">
+      </div>
+      <div class="help-text calc-multiple-only" style="display:none;">Insurance isn't included in the Multiple method — that's carried over exactly as it works in the reference spreadsheet. Worth confirming with whoever maintains it that this is intentional.</div>
+
+      <div class="breakdown-list" style="margin-top:18px;">
+        <div class="breakdown-row"><span>Base pay</span><span class="amt" id="calcBaseOut">$0.00</span></div>
+        <div class="breakdown-row"><span>Super (<span id="calcSuperPct">12.0</span>%)</span><span class="amt" id="calcSuperOut">$0.00</span></div>
+        <div class="breakdown-row"><span>Base + Super</span><span class="amt" id="calcBaseSuperOut">$0.00</span></div>
+        <div class="breakdown-row"><span>Payroll tax (<span id="calcPayrollPct">5.85</span>%)</span><span class="amt" id="calcPayrollOut">$0.00</span></div>
+        <div class="breakdown-row"><span>Workers comp (<span id="calcWorkersPctOut">5.0</span>%)</span><span class="amt" id="calcWorkersOut">$0.00</span></div>
+        <div class="breakdown-row"><span>Insurance (<span id="calcInsurancePctOut">2.0</span>%)</span><span class="amt" id="calcInsuranceOut">$0.00</span></div>
+        <div class="breakdown-row"><span>Margin (<span id="calcMarginPctOut">0.0</span>%)</span><span class="amt" id="calcMarginOut">$0.00</span></div>
+      </div>
+
+      <div class="readout-grid" style="grid-template-columns:1fr;">
+        <div class="readout charge">
+          <div class="rlabel">Charge rate</div>
+          <div class="rvalue" id="calcChargeOut">$0.00</div>
+          <div class="rsub" id="calcChargeSub">per hour</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
   <!-- ============ SYNC LOG TAB ============ -->
   <section class="tabpanel" id="tab-synclog">
 
@@ -704,8 +807,9 @@
     </div>
 
   </section>
-
 </main>
+</div>
+</div>
 
 <script>
 (function(){
@@ -1567,6 +1671,100 @@
       }
     }catch(e){}
   });
+
+  // ---------------- Calculator tab (state-based, from reference spreadsheet) ----------------
+  // Two independent methods, exactly matching the reference workbook:
+  //  - "$ Margin": you set a flat dollar profit; charge rate is built up
+  //    from cost (base+super+payroll+workers+insurance) plus that margin.
+  //  - "Multiple": you set a multiple of base pay; charge rate = base pay
+  //    x multiple directly, and margin is whatever's left over after
+  //    cost. NOTE: insurance is NOT included in the Multiple method's
+  //    cost or margin calc -- that's carried over exactly as the
+  //    reference spreadsheet does it (Insurance was hardcoded to 0 and
+  //    not linked to the $ Margin method's insurance rate), not
+  //    something introduced here. Worth confirming that's intentional.
+  var CALC_SUPER_RATE = 0.12;
+  var STATE_PAYROLL_RATES = { VIC: 0.0585, NSW: 0.0545, QLD: 0.052, SA: 0.0495 };
+
+  var calcState = "VIC";
+  var calcMethod = "margin";
+
+  var calcStateSeg = document.getElementById("calcStateSeg");
+  var calcMethodSeg = document.getElementById("calcMethodSeg");
+  var calcBasePay = document.getElementById("calcBasePay");
+  var calcWorkersRate = document.getElementById("calcWorkersRate");
+  var calcDollarMargin = document.getElementById("calcDollarMargin");
+  var calcInsuranceRate = document.getElementById("calcInsuranceRate");
+  var calcMultiple = document.getElementById("calcMultiple");
+
+  calcStateSeg.addEventListener("click", function(e){
+    var btn = e.target.closest("button");
+    if(!btn) return;
+    Array.prototype.forEach.call(calcStateSeg.querySelectorAll("button"), function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+    calcState = btn.getAttribute("data-val");
+    recalcCalculator();
+  });
+
+  calcMethodSeg.addEventListener("click", function(e){
+    var btn = e.target.closest("button");
+    if(!btn) return;
+    Array.prototype.forEach.call(calcMethodSeg.querySelectorAll("button"), function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+    calcMethod = btn.getAttribute("data-val");
+    document.querySelectorAll(".calc-margin-only").forEach(function(el){ el.style.display = calcMethod === "margin" ? "" : "none"; });
+    document.querySelectorAll(".calc-multiple-only").forEach(function(el){ el.style.display = calcMethod === "multiple" ? "" : "none"; });
+    recalcCalculator();
+  });
+
+  [calcBasePay, calcWorkersRate, calcDollarMargin, calcInsuranceRate, calcMultiple].forEach(function(el){
+    el.addEventListener("input", recalcCalculator);
+  });
+
+  function recalcCalculator(){
+    var basePay = parseFloat(calcBasePay.value) || 0;
+    var workersRate = (parseFloat(calcWorkersRate.value) || 0) / 100;
+    var payrollRate = STATE_PAYROLL_RATES[calcState];
+
+    var superAmt = basePay * CALC_SUPER_RATE;
+    var baseSuper = basePay + superAmt;
+    var payrollAmt = baseSuper * payrollRate;
+    var workersAmt = baseSuper * workersRate;
+
+    var insuranceAmt, marginAmt, chargeRate;
+
+    if(calcMethod === "margin"){
+      var insuranceRate = (parseFloat(calcInsuranceRate.value) || 0) / 100;
+      insuranceAmt = baseSuper * insuranceRate;
+      marginAmt = parseFloat(calcDollarMargin.value) || 0;
+      chargeRate = baseSuper + payrollAmt + workersAmt + insuranceAmt + marginAmt;
+      document.getElementById("calcInsurancePctOut").textContent = (insuranceRate * 100).toFixed(1);
+    } else {
+      var multiple = parseFloat(calcMultiple.value) || 0;
+      insuranceAmt = 0; // not included in the Multiple method -- see note above
+      chargeRate = basePay * multiple;
+      marginAmt = chargeRate - baseSuper - payrollAmt - workersAmt;
+      document.getElementById("calcInsurancePctOut").textContent = "0.0";
+    }
+
+    var marginPct = chargeRate > 0 ? (marginAmt / chargeRate) * 100 : 0;
+
+    document.getElementById("calcBaseOut").textContent = fmt(basePay);
+    document.getElementById("calcSuperPct").textContent = (CALC_SUPER_RATE * 100).toFixed(1);
+    document.getElementById("calcSuperOut").textContent = fmt(superAmt);
+    document.getElementById("calcBaseSuperOut").textContent = fmt(baseSuper);
+    document.getElementById("calcPayrollPct").textContent = (payrollRate * 100).toFixed(2);
+    document.getElementById("calcPayrollOut").textContent = fmt(payrollAmt);
+    document.getElementById("calcWorkersPctOut").textContent = (workersRate * 100).toFixed(1);
+    document.getElementById("calcWorkersOut").textContent = fmt(workersAmt);
+    document.getElementById("calcInsuranceOut").textContent = fmt(insuranceAmt);
+    document.getElementById("calcMarginPctOut").textContent = marginPct.toFixed(1);
+    document.getElementById("calcMarginOut").textContent = fmt(marginAmt);
+    document.getElementById("calcChargeOut").textContent = fmt(chargeRate);
+    document.getElementById("calcChargeSub").textContent = "per hour · " + calcState + " · " + (calcMethod === "margin" ? "$ Margin method" : "Multiple method");
+  }
+
+  recalcCalculator();
 
 })();
 </script>
