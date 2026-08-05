@@ -42,7 +42,9 @@
     background: var(--paper);
     color:var(--ink);
     padding:18px 16px 22px;
-    position:relative;
+    position:sticky;
+    top:0;
+    z-index:100;
     overflow:hidden;
     border-bottom:4px solid var(--spark);
   }
@@ -115,7 +117,7 @@
   }
   .side-tabs{
     flex:0 0 200px; display:flex; flex-direction:column; gap:6px;
-    position:sticky; top:20px;
+    position:sticky; top:calc(var(--header-h, 160px) + 20px);
   }
   .app-content{ flex:1 1 720px; max-width:720px; min-width:0; }
 
@@ -424,14 +426,6 @@
 </head>
 <body>
 
-<div class="app-shell">
-<nav class="side-tabs">
-  <button class="tabbtn active" data-tab="ratecard" id="tabbtn-ratecard"><span class="dot"></span>Rate Card</button>
-  <button class="tabbtn" data-tab="awardcheck" id="tabbtn-awardcheck"><span class="dot"></span>Award Check</button>
-  <button class="tabbtn" data-tab="calculator" id="tabbtn-calculator"><span class="dot"></span>Calculator</button>
-  <button class="tabbtn" data-tab="synclog" id="tabbtn-synclog"><span class="dot"></span>Sync Log</button>
-</nav>
-<div class="app-content">
 <header class="top">
 <div class="header-inner">
   <div class="brandrow">
@@ -457,6 +451,14 @@
 </div>
 </header>
 
+<div class="app-shell">
+<nav class="side-tabs">
+  <button class="tabbtn" data-tab="calculator" id="tabbtn-calculator"><span class="dot"></span>Calculator</button>
+  <button class="tabbtn active" data-tab="ratecard" id="tabbtn-ratecard"><span class="dot"></span>Rate Card</button>
+  <button class="tabbtn" data-tab="awardcheck" id="tabbtn-awardcheck"><span class="dot"></span>Award Check</button>
+  <button class="tabbtn" data-tab="synclog" id="tabbtn-synclog"><span class="dot"></span>Sync Log</button>
+</nav>
+<div class="app-content">
 <main>
 
   <!-- ============ RATE CARD TAB ============ -->
@@ -815,6 +817,20 @@
 (function(){
   "use strict";
 
+  // ---------------- Sticky header height sync ----------------
+  // The sidebar tabs need to start exactly below the sticky header,
+  // whatever height that header happens to render at (it can wrap
+  // differently at different widths, or the sync status line can grow
+  // to two lines). Measuring it in JS is more robust than guessing a
+  // fixed number in CSS.
+  function syncHeaderHeight(){
+    var header = document.querySelector("header.top");
+    if(!header) return;
+    document.documentElement.style.setProperty("--header-h", header.offsetHeight + "px");
+  }
+  syncHeaderHeight();
+  window.addEventListener("resize", syncHeaderHeight);
+
   // ---------------- Data ----------------
   // matchKey = the exact text expected to appear as a whole word/phrase
   // inside FWC's `classification` label for that row, used to find the
@@ -961,6 +977,7 @@
   function setSyncStatus(text, mode){
     syncStatus.textContent = text;
     syncStatus.className = "sync-status" + (mode ? " " + mode : "");
+    syncHeaderHeight();
   }
 
   // Matches FWC's returned classifications back to our local list by
