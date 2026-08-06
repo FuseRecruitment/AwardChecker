@@ -41,7 +41,7 @@
   header.top{
     background: var(--paper);
     color:var(--ink);
-    padding:18px 16px 22px;
+    padding:14px 16px 16px;
     position:sticky;
     top:0;
     z-index:100;
@@ -71,13 +71,14 @@
   }
   h1.pagetitle{
     position:relative; z-index:1;
-    font-size:20px; margin:16px 0 2px; letter-spacing:-0.01em; font-weight:800; color:var(--ink);
+    font-size:18px; margin:10px 0 3px; letter-spacing:-0.01em; font-weight:800; color:var(--ink);
   }
   p.pagesub{
     position:relative; z-index:1;
-    margin:0 0 16px; color:var(--muted); font-size:13px; line-height:1.5; max-width:46ch;
+    margin:0 0 12px; color:var(--muted); font-size:12.5px; line-height:1.4;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  .sync-row{ position:relative; z-index:1; margin-bottom:12px; }
+  .sync-row{ position:relative; z-index:1; margin-bottom:10px; }
   .sync-btn{
     width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
     border:1.5px solid var(--line); background:#fff; color:var(--ink);
@@ -420,7 +421,7 @@
     .quote-rates .rr .v{ font-size:21px; }
     .estimate-total .evalue{ font-size:40px; }
     h1.pagetitle{ font-size:23px; }
-    header.top{ padding:26px 20px 28px; }
+    header.top{ padding:18px 20px 20px; }
   }
 </style>
 </head>
@@ -434,7 +435,7 @@
     <span class="fy-badge">FY2026–27</span>
   </div>
   <h1 class="pagetitle">Award rate calculator</h1>
-  <p class="pagesub">Select an award and classification to build a client-ready charge rate, then check any casual pay rate against the award minimum.</p>
+  <p class="pagesub">Build a client-ready charge rate, or check a pay rate against the award minimum.</p>
 
   <div class="sync-row">
     <button class="sync-btn" id="syncRatesBtn">
