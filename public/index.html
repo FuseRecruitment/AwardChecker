@@ -745,9 +745,13 @@
           <input type="number" id="calcBasePay" class="calc-editable" value="33.50" min="0" step="0.01">
         </div>
         <div class="field">
-          <label class="field-label">Workers comp (%)</label>
-          <input type="number" id="calcWorkersRate" class="calc-editable" value="5.0" min="0" step="0.1">
+          <label class="field-label">Super (%)</label>
+          <input type="number" id="calcSuperRate" class="calc-editable" value="12.0" min="0" step="0.1">
         </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Workers comp (%)</label>
+        <input type="number" id="calcWorkersRate" class="calc-editable" value="5.0" min="0" step="0.1">
       </div>
 
       <div class="field calc-margin-only">
@@ -1700,7 +1704,6 @@
   //    reference spreadsheet does it (Insurance was hardcoded to 0 and
   //    not linked to the $ Margin method's insurance rate), not
   //    something introduced here. Worth confirming that's intentional.
-  var CALC_SUPER_RATE = 0.12;
   var STATE_PAYROLL_RATES = { VIC: 0.0585, NSW: 0.0545, QLD: 0.052, SA: 0.0495 };
 
   var calcState = "VIC";
@@ -1709,6 +1712,7 @@
   var calcStateSeg = document.getElementById("calcStateSeg");
   var calcMethodSeg = document.getElementById("calcMethodSeg");
   var calcBasePay = document.getElementById("calcBasePay");
+  var calcSuperRate = document.getElementById("calcSuperRate");
   var calcWorkersRate = document.getElementById("calcWorkersRate");
   var calcDollarMargin = document.getElementById("calcDollarMargin");
   var calcInsuranceRate = document.getElementById("calcInsuranceRate");
@@ -1734,16 +1738,17 @@
     recalcCalculator();
   });
 
-  [calcBasePay, calcWorkersRate, calcDollarMargin, calcInsuranceRate, calcMultiple].forEach(function(el){
+  [calcBasePay, calcSuperRate, calcWorkersRate, calcDollarMargin, calcInsuranceRate, calcMultiple].forEach(function(el){
     el.addEventListener("input", recalcCalculator);
   });
 
   function recalcCalculator(){
     var basePay = parseFloat(calcBasePay.value) || 0;
+    var superRate = (parseFloat(calcSuperRate.value) || 0) / 100;
     var workersRate = (parseFloat(calcWorkersRate.value) || 0) / 100;
     var payrollRate = STATE_PAYROLL_RATES[calcState];
 
-    var superAmt = basePay * CALC_SUPER_RATE;
+    var superAmt = basePay * superRate;
     var baseSuper = basePay + superAmt;
     var payrollAmt = baseSuper * payrollRate;
     var workersAmt = baseSuper * workersRate;
@@ -1767,7 +1772,7 @@
     var marginPct = chargeRate > 0 ? (marginAmt / chargeRate) * 100 : 0;
 
     document.getElementById("calcBaseOut").textContent = fmt(basePay);
-    document.getElementById("calcSuperPct").textContent = (CALC_SUPER_RATE * 100).toFixed(1);
+    document.getElementById("calcSuperPct").textContent = (superRate * 100).toFixed(1);
     document.getElementById("calcSuperOut").textContent = fmt(superAmt);
     document.getElementById("calcBaseSuperOut").textContent = fmt(baseSuper);
     document.getElementById("calcPayrollPct").textContent = (payrollRate * 100).toFixed(2);
