@@ -28,55 +28,47 @@
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
+  html, body{ height:100%; margin:0; }
   body{
     background:var(--surface);
     font-family:var(--sans);
     color:var(--ink);
     -webkit-font-smoothing:antialiased;
-    padding-bottom:64px;
+    overflow:hidden; /* the sidebar and app-content each scroll independently instead */
   }
   ::selection{ background:var(--spark-2); color:var(--ink); }
 
-  /* ---------- Header ---------- */
-  header.top{
-    background: var(--paper);
-    color:var(--ink);
-    padding:14px 16px 16px;
-    position:sticky;
-    top:0;
-    z-index:100;
-    overflow:hidden;
-    border-bottom:4px solid var(--spark);
+  /* ---------- Sidebar brand block (used to be a separate top header) ---------- */
+  .side-brand{
+    position:relative; padding:18px 16px 16px; border-bottom:1px solid var(--line);
   }
-  .header-inner{ max-width:720px; margin:0 auto; position:relative; z-index:1; }
-  header.top::after{
+  .side-brand::after{
     content:"";
     position:absolute; inset:0;
     background: radial-gradient(circle at 92% -20%, rgba(0,156,221,0.10), transparent 46%);
     pointer-events:none;
   }
   .brandrow{
-    display:flex; align-items:center; gap:12px; position:relative; z-index:1;
+    display:flex; flex-direction:column; align-items:flex-start; gap:6px; position:relative; z-index:1;
   }
-  .wordmark-sub{ flex:1 1 auto; }
+  .wordmark-sub{ order:2; }
   .fy-badge{
-    flex:0 0 auto; font-size:10.5px; font-weight:800; color:var(--muted);
+    order:3; font-size:10.5px; font-weight:800; color:var(--muted);
     background:var(--surface); border:1px solid var(--line); border-radius:20px;
     padding:4px 10px; white-space:nowrap;
   }
-  .logo-mark{ flex:0 0 auto; display:block; height:30px; width:auto; }
+  .logo-mark{ order:1; display:block; height:26px; width:auto; }
   .wordmark-sub small{
-    display:block; font-weight:700; font-size:10px; letter-spacing:0.13em;
-    text-transform:uppercase; color:var(--spark-dark); margin-top:2px;
+    display:block; font-weight:700; font-size:9.5px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--spark-dark);
   }
   h1.pagetitle{
     position:relative; z-index:1;
-    font-size:18px; margin:10px 0 3px; letter-spacing:-0.01em; font-weight:800; color:var(--ink);
+    font-size:16px; margin:12px 0 4px; letter-spacing:-0.01em; font-weight:800; color:var(--ink);
   }
   p.pagesub{
     position:relative; z-index:1;
-    margin:0 0 12px; color:var(--muted); font-size:12.5px; line-height:1.4;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    margin:0 0 12px; color:var(--muted); font-size:12px; line-height:1.4;
   }
   .sync-row{ position:relative; z-index:1; margin-bottom:10px; }
   .sync-btn{
@@ -107,33 +99,37 @@
   }
   .agency-field input::placeholder{ color:#9AA6B2; font-weight:500; }
 
-  /* ---------- Sidebar shell layout ---------- */
-  /* Tabs now live in a left-hand sidebar rather than a horizontal bar
-     above the content. This intentionally goes wider than a single
-     mobile screen -- the content column keeps the same 720px width it
-     always had, the sidebar is simply added alongside it. */
+  /* ---------- App shell: fixed sidebar + independently scrolling content ---------- */
+  /* The sidebar (brand block + tabs) is a true fixed-height column that
+     never scrolls with the page -- it fills the full viewport height on
+     its own. The content pane beside it scrolls independently, so it's
+     fully visible top to bottom without a header cutting into it. */
   .app-shell{
-    display:flex; align-items:flex-start; gap:20px;
-    max-width:940px; margin:0 auto; padding:20px 14px;
+    display:flex; align-items:stretch; height:100vh; height:100dvh;
   }
   .side-tabs{
-    flex:0 0 200px; display:flex; flex-direction:column; gap:6px;
-    position:sticky; top:calc(var(--header-h, 160px) + 20px);
+    flex:0 0 260px; display:flex; flex-direction:column;
+    height:100%; overflow-y:auto;
+    background:var(--paper); border-right:1px solid var(--line);
   }
-  .app-content{ flex:1 1 720px; max-width:720px; min-width:0; }
+  .side-divider{ height:1px; background:var(--line); margin:14px 16px; }
+  .app-content{
+    flex:1 1 auto; min-width:0; height:100%; overflow-y:auto;
+  }
 
   .tabbtn{
-    width:100%; text-align:left; border:1px solid var(--line); cursor:pointer;
-    padding:12px 14px; background:var(--card); color:var(--muted);
-    font-weight:700; font-size:13.5px; border-radius:10px; font-family:var(--sans);
+    width:100%; text-align:left; border:none; cursor:pointer;
+    padding:12px 16px; background:transparent; color:var(--muted);
+    font-weight:700; font-size:13.5px; font-family:var(--sans);
+    border-left:3px solid transparent;
   }
-  .tabbtn.active{ color:var(--ink); background:var(--surface); border-color:var(--spark); }
+  .tabbtn.active{ color:var(--ink); background:var(--surface); border-left-color:var(--spark); }
   .tabbtn .dot{
     display:inline-block; width:6px; height:6px; border-radius:50%;
     background:var(--spark); margin-right:6px; vertical-align:middle;
   }
 
-  main{ padding:0 0 24px; }
+  main{ max-width:720px; margin:0 auto; padding:20px 20px 40px; }
   .tabpanel{ display:none; }
   .tabpanel.active{ display:block; }
 
@@ -304,12 +300,6 @@
   .quote-top .lbl{ font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#9FB0C6; font-weight:800; }
   .quote-top .val{ font-weight:800; font-size:14.5px; margin-top:2px; }
   .qdate{ font-size:10.5px; color:#8FA1B8; margin-top:4px; }
-  button.ghost-btn-onquote{
-    width:100%; margin-top:14px; border:1.5px solid rgba(255,255,255,0.28); cursor:pointer; border-radius:10px;
-    padding:12px; font-weight:700; font-size:13px; font-family:var(--sans);
-    background:transparent; color:#fff; position:relative; z-index:1;
-  }
-  button.ghost-btn-onquote.ready{ background:var(--good); border-color:var(--good); }
   .quote-divider{ height:1px; background:rgba(255,255,255,0.14); margin:14px 0; position:relative; z-index:1; }
   .quote-award{ position:relative; z-index:1; font-size:13px; color:#CBD7E5; line-height:1.5; }
   .quote-award b{ color:#fff; }
@@ -421,14 +411,15 @@
     .quote-rates .rr .v{ font-size:21px; }
     .estimate-total .evalue{ font-size:40px; }
     h1.pagetitle{ font-size:23px; }
-    header.top{ padding:18px 20px 20px; }
+    .side-brand{ padding:22px 20px 20px; }
   }
 </style>
 </head>
 <body>
 
-<header class="top">
-<div class="header-inner">
+<div class="app-shell">
+<nav class="side-tabs">
+<div class="side-brand">
   <div class="brandrow">
     <img class="logo-mark" src="data:image/png;base64,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" alt="Fuse Recruitment" width="500" height="291">
     <div class="wordmark-sub"><small>Rate Card &amp; Compliance Tool</small></div>
@@ -450,12 +441,9 @@
     <input type="text" id="agencyName" placeholder="Type your agency name…" value="Fuse Recruitment">
   </div>
 </div>
-</header>
-
-<div class="app-shell">
-<nav class="side-tabs">
-  <button class="tabbtn" data-tab="calculator" id="tabbtn-calculator"><span class="dot"></span>Calculator</button>
-  <button class="tabbtn active" data-tab="ratecard" id="tabbtn-ratecard"><span class="dot"></span>Rate Card</button>
+<div class="side-divider"></div>
+  <button class="tabbtn active" data-tab="calculator" id="tabbtn-calculator"><span class="dot"></span>Calculator</button>
+  <button class="tabbtn" data-tab="ratecard" id="tabbtn-ratecard"><span class="dot"></span>Rate Card</button>
   <button class="tabbtn" data-tab="awardcheck" id="tabbtn-awardcheck"><span class="dot"></span>Award Check</button>
   <button class="tabbtn" data-tab="synclog" id="tabbtn-synclog"><span class="dot"></span>Sync Log</button>
 </nav>
@@ -463,7 +451,7 @@
 <main>
 
   <!-- ============ RATE CARD TAB ============ -->
-  <section class="tabpanel active" id="tab-ratecard">
+  <section class="tabpanel" id="tab-ratecard">
 
     <details class="howto">
       <summary>How to use this</summary>
@@ -595,31 +583,8 @@
         <div class="rr"><div class="k">Cost / hr</div><div class="v" id="qCost">$0.00</div></div>
         <div class="rr"><div class="k">Charge / hr</div><div class="v" id="qCharge">$0.00</div></div>
       </div>
-      <button class="ghost-btn-onquote" id="screenshotBtn">Prepare for screenshot</button>
       <button class="primary-btn" id="copyRatesBtn">Copy charge rates</button>
       <div class="copy-toast" id="copyRatesToast">Copied to clipboard ✓</div>
-    </div>
-
-    <div class="card">
-      <h2><span class="num">05</span>Engagement estimate</h2>
-      <div class="field">
-        <label class="field-label">Role</label>
-        <input type="text" id="roleField" placeholder="e.g. Forklift Operator">
-      </div>
-      <div class="field">
-        <label class="field-label">Number of weeks</label>
-        <input type="number" id="weeksField" placeholder="e.g. 12" min="1" step="1">
-      </div>
-      <div class="helper">Estimate covers ordinary hours only (38 hrs/week) — excludes penalties, overtime and allowances.</div>
-
-      <div class="estimate-total">
-        <div class="elabel">Estimated total charge</div>
-        <div class="evalue" id="estimateTotal">$0.00</div>
-        <div class="esub" id="estimateSub">Fill in client, role and weeks above</div>
-      </div>
-
-      <button class="ghost-btn" id="copyQuoteBtn">Copy quote</button>
-      <div class="copy-toast" id="copyQuoteToast">Copied to clipboard ✓</div>
     </div>
 
     <p class="disclaimer">Rates are indicative, based on published FY2026–27 award pay guide summaries as at July 2026. Site, industry, cold work and dangerous goods allowances are not included. Confirm current rates against the official Fair Work pay guide before quoting a client.</p>
@@ -702,7 +667,7 @@
   </section>
 
   <!-- ============ CALCULATOR TAB ============ -->
-  <section class="tabpanel" id="tab-calculator">
+  <section class="tabpanel active" id="tab-calculator">
 
     <details class="howto">
       <summary>How to use this</summary>
@@ -731,8 +696,8 @@
           <button type="button" class="help-tip" aria-expanded="false" data-help="calcMethod-help">?</button>
         </label>
         <div class="segmented" id="calcMethodSeg">
-          <button data-val="margin" class="active">$ Margin</button>
-          <button data-val="multiple">Multiple</button>
+          <button data-val="multiple" class="active">Multiple</button>
+          <button data-val="margin">$ Margin</button>
         </div>
       </div>
       <div class="help-text" id="calcMethod-help">$ Margin builds the charge rate up from cost plus a flat dollar profit you set. Multiple instead sets the charge rate directly as base pay × a multiple, and margin becomes whatever's left over — the two methods usually give slightly different results for the same role.</div>
@@ -746,29 +711,21 @@
           <input type="number" id="calcBasePay" class="calc-editable" value="33.50" min="0" step="0.01">
         </div>
         <div class="field">
-          <label class="field-label">Super (%)</label>
-          <input type="number" id="calcSuperRate" class="calc-editable" value="12.0" min="0" step="0.1">
+          <label class="field-label">Workers comp (%)</label>
+          <input type="number" id="calcWorkersRate" class="calc-editable" value="5.0" min="0" step="0.1">
         </div>
       </div>
-      <div class="field">
-        <label class="field-label">Workers comp (%)</label>
-        <input type="number" id="calcWorkersRate" class="calc-editable" value="5.0" min="0" step="0.1">
-      </div>
 
-      <div class="field calc-margin-only">
+      <div class="field calc-margin-only" style="display:none;">
         <label class="field-label">$ Margin ($/hr)</label>
         <input type="number" id="calcDollarMargin" class="calc-editable" value="6.50" min="0" step="0.01">
       </div>
-      <div class="field calc-margin-only">
-        <label class="field-label">Insurance (%)</label>
-        <input type="number" id="calcInsuranceRate" class="calc-editable" value="2.0" min="0" step="0.1">
-      </div>
 
-      <div class="field calc-multiple-only" style="display:none;">
+      <div class="field calc-multiple-only">
         <label class="field-label">Multiple</label>
         <input type="number" id="calcMultiple" class="calc-editable" value="1.4" min="1" step="0.01">
       </div>
-      <div class="help-text calc-multiple-only" style="display:none;">Insurance isn't included in the Multiple method — that's carried over exactly as it works in the reference spreadsheet. Worth confirming with whoever maintains it that this is intentional.</div>
+      <div class="help-text calc-multiple-only">Insurance isn't included in the Multiple method — that's carried over exactly as it works in the reference spreadsheet. Worth confirming with whoever maintains it that this is intentional.</div>
 
       <div class="breakdown-list" style="margin-top:18px;">
         <div class="breakdown-row"><span>Base pay</span><span class="amt" id="calcBaseOut">$0.00</span></div>
@@ -821,20 +778,6 @@
 <script>
 (function(){
   "use strict";
-
-  // ---------------- Sticky header height sync ----------------
-  // The sidebar tabs need to start exactly below the sticky header,
-  // whatever height that header happens to render at (it can wrap
-  // differently at different widths, or the sync status line can grow
-  // to two lines). Measuring it in JS is more robust than guessing a
-  // fixed number in CSS.
-  function syncHeaderHeight(){
-    var header = document.querySelector("header.top");
-    if(!header) return;
-    document.documentElement.style.setProperty("--header-h", header.offsetHeight + "px");
-  }
-  syncHeaderHeight();
-  window.addEventListener("resize", syncHeaderHeight);
 
   // ---------------- Data ----------------
   // matchKey = the exact text expected to appear as a whole word/phrase
@@ -982,7 +925,6 @@
   function setSyncStatus(text, mode){
     syncStatus.textContent = text;
     syncStatus.className = "sync-status" + (mode ? " " + mode : "");
-    syncHeaderHeight();
   }
 
   // Matches FWC's returned classifications back to our local list by
@@ -1208,8 +1150,6 @@
   var awardNote = document.getElementById("awardNote");
   var clientName = document.getElementById("clientName");
   var agencyName = document.getElementById("agencyName");
-  var roleField = document.getElementById("roleField");
-  var weeksField = document.getElementById("weeksField");
 
   // ---------------- Shared "last synced" rates (everyone sees the same state) ----------------
   // Replaces the earlier per-browser localStorage approach: instead of
@@ -1423,8 +1363,6 @@
   marginSlider.addEventListener("input", recalc);
   clientName.addEventListener("input", recalc);
   agencyName.addEventListener("input", recalc);
-  roleField.addEventListener("input", recalc);
-  weeksField.addEventListener("input", recalc);
 
   function recalc(){
     var award = AWARDS[awardSelect.value];
@@ -1498,30 +1436,11 @@
     document.getElementById("qCost").textContent = fmt(cost);
     document.getElementById("qCharge").textContent = fmt(charge);
 
-    // Engagement estimate
-    var weeks = parseFloat(weeksField.value);
-    var role = roleField.value.trim();
-    var client = clientName.value.trim();
-    var estimateEl = document.getElementById("estimateTotal");
-    var subEl = document.getElementById("estimateSub");
-    if(weeks > 0){
-      var total = charge * ORDINARY_HOURS_PER_WEEK * weeks;
-      estimateEl.textContent = fmt(total);
-      var subParts = [];
-      if(client) subParts.push(client);
-      if(role) subParts.push(role);
-      subParts.push(weeks + " wk" + (weeks == 1 ? "" : "s") + " · " + ORDINARY_HOURS_PER_WEEK + " hrs/wk ordinary time");
-      subEl.textContent = subParts.join(" · ");
-    } else {
-      estimateEl.textContent = "$0.00";
-      subEl.textContent = "Fill in client, role and weeks above";
-    }
-
     window._fuseState = {
       award: award, classId: classId, cls: cls, empType: currentEmpType,
       pay: pay, cost: cost, charge: charge, marginPct: marginPct, multiplier: multiplier,
       agency: agencyName.value.trim() || "Fuse Recruitment",
-      client: clientName.value.trim(), role: role, weeks: weeks
+      client: clientName.value.trim()
     };
   }
 
@@ -1548,57 +1467,87 @@
     document.body.removeChild(ta);
   }
 
-  document.getElementById("screenshotBtn").addEventListener("click", function(){
-    var btn = document.getElementById("screenshotBtn");
-    var original = btn.textContent;
-    btn.textContent = "Ready — screenshot the card above";
-    btn.classList.add("ready");
-    setTimeout(function(){
-      btn.textContent = original;
-      btn.classList.remove("ready");
-    }, 2200);
-  });
+  // Copies BOTH a plain-text version (tab-separated, so it still lands
+  // as columns if pasted into Excel/Sheets) and a real HTML <table> --
+  // most rich-text destinations (Word, Gmail, Outlook, Docs, Slack)
+  // read the HTML version and paste an actual formatted table instead
+  // of plain lines of text. Falls back to plain-text-only copy if the
+  // browser doesn't support writing rich clipboard content.
+  function copyRichText(plainText, htmlText, toastEl){
+    function shown(){
+      toastEl.classList.add("show");
+      setTimeout(function(){ toastEl.classList.remove("show"); }, 2200);
+    }
+    if(navigator.clipboard && window.ClipboardItem){
+      try{
+        var item = new ClipboardItem({
+          "text/plain": new Blob([plainText], {type:"text/plain"}),
+          "text/html": new Blob([htmlText], {type:"text/html"})
+        });
+        navigator.clipboard.write([item]).then(shown).catch(function(){
+          copyText(plainText, toastEl); // rich write blocked (permissions etc) -- plain text still works
+        });
+      }catch(e){
+        copyText(plainText, toastEl);
+      }
+    } else {
+      copyText(plainText, toastEl); // browser doesn't support rich clipboard writes at all
+    }
+  }
 
   document.getElementById("copyRatesBtn").addEventListener("click", function(){
     var s = window._fuseState;
     var award = AWARDS[awardSelect.value];
-    var lines = [];
-    lines.push(s.agency + " — Charge Rate Card");
-    lines.push(s.client ? ("Prepared for: " + s.client) : "");
-    lines.push(award.name + " [" + award.code + "]");
-    lines.push("Classification: " + (s.cls ? s.cls.label : "—") + " · " + (s.empType === "casual" ? "Casual (+25%)" : "Permanent/Full-time"));
-    lines.push("Margin: " + s.marginPct + "% (multiplier: " + s.multiplier.toFixed(2) + "×)");
-    lines.push("");
-    lines.push("Ordinary time — Cost/hr: " + fmt(s.cost) + " · Charge/hr: " + fmt(s.charge));
-    lines.push("");
-    lines.push("Penalty rates (charge/hr):");
+
+    var empLabel = s.empType === "casual" ? "Casual (+25%)" : "Permanent/Full-time";
+    var headerLines = [
+      s.agency + " — Charge Rate Card",
+      s.client ? ("Prepared for: " + s.client) : "",
+      award.name + " [" + award.code + "]",
+      "Classification: " + (s.cls ? s.cls.label : "—") + " · " + empLabel,
+      "Margin: " + s.marginPct + "% (multiplier: " + s.multiplier.toFixed(2) + "×)"
+    ].filter(Boolean);
+
+    // Build the rate rows once, shared by both the plain-text and HTML versions
+    var rows = [{ label: "Ordinary time", mult: "1×", charge: s.charge }];
     award.penalties.forEach(function(p){
       var pPay = s.pay * p.mult;
       var pCost = costFromPay(pPay);
       var pCharge = chargeFromCost(pCost, s.marginPct);
-      lines.push("  " + p.label + " (" + p.mult + "×): " + fmt(pCharge));
+      rows.push({ label: p.label, mult: p.mult + "×", charge: pCharge });
     });
-    copyText(lines.filter(Boolean).join("\n"), document.getElementById("copyRatesToast"));
-  });
 
-  document.getElementById("copyQuoteBtn").addEventListener("click", function(){
-    var s = window._fuseState;
-    var award = s.award;
-    var lines = [];
-    lines.push("Quote — " + s.agency);
-    lines.push(s.client ? ("Client: " + s.client) : "Client: —");
-    lines.push(s.role ? ("Role: " + s.role) : "");
-    lines.push("Award: " + award.name + " [" + award.code + "]");
-    lines.push("Classification: " + (s.cls ? s.cls.label : "—"));
-    lines.push("Employment type: " + (s.empType === "casual" ? "Casual (+25% loading)" : "Permanent/Full-time"));
-    lines.push("Charge rate: " + fmt(s.charge) + "/hr (ordinary time)");
-    if(s.weeks > 0){
-      lines.push("Engagement length: " + s.weeks + " week" + (s.weeks == 1 ? "" : "s") + " at " + ORDINARY_HOURS_PER_WEEK + " ordinary hrs/wk");
-      lines.push("Estimated total charge: " + fmt(s.charge * ORDINARY_HOURS_PER_WEEK * s.weeks));
-    }
-    lines.push("");
-    lines.push("Estimate covers ordinary hours only — excludes penalties, overtime and allowances.");
-    copyText(lines.filter(Boolean).join("\n"), document.getElementById("copyQuoteToast"));
+    // Plain-text fallback: tab-separated, so pasting into a spreadsheet
+    // still lands each value in its own column/row.
+    var plainLines = headerLines.concat(["", "Rate type\tMultiplier\tCharge/hr"]);
+    rows.forEach(function(r){
+      plainLines.push(r.label + "\t" + r.mult + "\t" + fmt(r.charge));
+    });
+    var plainText = plainLines.join("\n");
+
+    // Rich HTML version: an actual <table>, inline-styled since pasted
+    // content only respects inline styles, not linked stylesheets.
+    var htmlRows = rows.map(function(r){
+      return "<tr>" +
+        "<td style='padding:6px 10px;border:1px solid #ccc;'>" + r.label + "</td>" +
+        "<td style='padding:6px 10px;border:1px solid #ccc;text-align:right;'>" + r.mult + "</td>" +
+        "<td style='padding:6px 10px;border:1px solid #ccc;text-align:right;font-family:monospace;'>" + fmt(r.charge) + "</td>" +
+      "</tr>";
+    }).join("");
+    var htmlText =
+      "<div style='font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#151A36;'>" +
+        headerLines.map(function(l, i){ return i === 0 ? "<p style='margin:0 0 6px;font-weight:bold;'>" + l + "</p>" : "<p style='margin:0 0 4px;'>" + l + "</p>"; }).join("") +
+        "<table style='border-collapse:collapse;margin-top:10px;' cellpadding='0' cellspacing='0'>" +
+          "<tr style='background:#151A36;color:#fff;'>" +
+            "<th style='padding:6px 10px;border:1px solid #ccc;text-align:left;'>Rate type</th>" +
+            "<th style='padding:6px 10px;border:1px solid #ccc;text-align:right;'>Multiplier</th>" +
+            "<th style='padding:6px 10px;border:1px solid #ccc;text-align:right;'>Charge/hr</th>" +
+          "</tr>" +
+          htmlRows +
+        "</table>" +
+      "</div>";
+
+    copyRichText(plainText, htmlText, document.getElementById("copyRatesToast"));
   });
 
   // ---------------- Tabs ----------------
@@ -1707,16 +1656,18 @@
   //    something introduced here. Worth confirming that's intentional.
   var STATE_PAYROLL_RATES = { VIC: 0.0585, NSW: 0.0545, QLD: 0.052, SA: 0.0495 };
 
+  var CALC_SUPER_RATE = 0.12;   // fixed, not editable
+  var CALC_INSURANCE_RATE = 0.01; // fixed, not editable -- only applies in the $ Margin method (Multiple method has no insurance component, per the reference spreadsheet)
+  var STATE_PAYROLL_RATES = { VIC: 0.0585, NSW: 0.0545, QLD: 0.052, SA: 0.0495 };
+
   var calcState = "VIC";
-  var calcMethod = "margin";
+  var calcMethod = "multiple";
 
   var calcStateSeg = document.getElementById("calcStateSeg");
   var calcMethodSeg = document.getElementById("calcMethodSeg");
   var calcBasePay = document.getElementById("calcBasePay");
-  var calcSuperRate = document.getElementById("calcSuperRate");
   var calcWorkersRate = document.getElementById("calcWorkersRate");
   var calcDollarMargin = document.getElementById("calcDollarMargin");
-  var calcInsuranceRate = document.getElementById("calcInsuranceRate");
   var calcMultiple = document.getElementById("calcMultiple");
 
   calcStateSeg.addEventListener("click", function(e){
@@ -1739,17 +1690,16 @@
     recalcCalculator();
   });
 
-  [calcBasePay, calcSuperRate, calcWorkersRate, calcDollarMargin, calcInsuranceRate, calcMultiple].forEach(function(el){
+  [calcBasePay, calcWorkersRate, calcDollarMargin, calcMultiple].forEach(function(el){
     el.addEventListener("input", recalcCalculator);
   });
 
   function recalcCalculator(){
     var basePay = parseFloat(calcBasePay.value) || 0;
-    var superRate = (parseFloat(calcSuperRate.value) || 0) / 100;
     var workersRate = (parseFloat(calcWorkersRate.value) || 0) / 100;
     var payrollRate = STATE_PAYROLL_RATES[calcState];
 
-    var superAmt = basePay * superRate;
+    var superAmt = basePay * CALC_SUPER_RATE;
     var baseSuper = basePay + superAmt;
     var payrollAmt = baseSuper * payrollRate;
     var workersAmt = baseSuper * workersRate;
@@ -1757,11 +1707,10 @@
     var insuranceAmt, marginAmt, chargeRate;
 
     if(calcMethod === "margin"){
-      var insuranceRate = (parseFloat(calcInsuranceRate.value) || 0) / 100;
-      insuranceAmt = baseSuper * insuranceRate;
+      insuranceAmt = baseSuper * CALC_INSURANCE_RATE;
       marginAmt = parseFloat(calcDollarMargin.value) || 0;
       chargeRate = baseSuper + payrollAmt + workersAmt + insuranceAmt + marginAmt;
-      document.getElementById("calcInsurancePctOut").textContent = (insuranceRate * 100).toFixed(1);
+      document.getElementById("calcInsurancePctOut").textContent = (CALC_INSURANCE_RATE * 100).toFixed(1);
     } else {
       var multiple = parseFloat(calcMultiple.value) || 0;
       insuranceAmt = 0; // not included in the Multiple method -- see note above
@@ -1773,7 +1722,7 @@
     var marginPct = chargeRate > 0 ? (marginAmt / chargeRate) * 100 : 0;
 
     document.getElementById("calcBaseOut").textContent = fmt(basePay);
-    document.getElementById("calcSuperPct").textContent = (superRate * 100).toFixed(1);
+    document.getElementById("calcSuperPct").textContent = (CALC_SUPER_RATE * 100).toFixed(1);
     document.getElementById("calcSuperOut").textContent = fmt(superAmt);
     document.getElementById("calcBaseSuperOut").textContent = fmt(baseSuper);
     document.getElementById("calcPayrollPct").textContent = (payrollRate * 100).toFixed(2);
