@@ -715,7 +715,6 @@
         <label class="field-label">Multiple</label>
         <input type="number" id="calcMultiple" class="calc-editable" value="1.4" min="1" step="0.01">
       </div>
-      <div class="help-text calc-multiple-only">Insurance isn't included in the Multiple method — that's carried over exactly as it works in the reference spreadsheet. Worth confirming with whoever maintains it that this is intentional.</div>
 
       <div class="breakdown-list" style="margin-top:18px;">
         <div class="breakdown-row"><span>Base pay</span><span class="amt" id="calcBaseOut">$0.00</span></div>
@@ -723,7 +722,7 @@
         <div class="breakdown-row"><span>Base + Super</span><span class="amt" id="calcBaseSuperOut">$0.00</span></div>
         <div class="breakdown-row"><span>Payroll tax (<span id="calcPayrollPct">5.85</span>%)</span><span class="amt" id="calcPayrollOut">$0.00</span></div>
         <div class="breakdown-row"><span>Workers comp (<span id="calcWorkersPctOut">5.0</span>%)</span><span class="amt" id="calcWorkersOut">$0.00</span></div>
-        <div class="breakdown-row"><span>Insurance (<span id="calcInsurancePctOut">2.0</span>%)</span><span class="amt" id="calcInsuranceOut">$0.00</span></div>
+        <div class="breakdown-row"><span>Insurance (<span id="calcInsurancePctOut">1.0</span>%)</span><span class="amt" id="calcInsuranceOut">$0.00</span></div>
         <div class="breakdown-row"><span>Margin (<span id="calcMarginPctOut">0.0</span>%)</span><span class="amt" id="calcMarginOut">$0.00</span></div>
       </div>
 
@@ -1647,7 +1646,7 @@
   var STATE_PAYROLL_RATES = { VIC: 0.0585, NSW: 0.0545, QLD: 0.052, SA: 0.0495 };
 
   var CALC_SUPER_RATE = 0.12;   // fixed, not editable
-  var CALC_INSURANCE_RATE = 0.01; // fixed, not editable -- only applies in the $ Margin method (Multiple method has no insurance component, per the reference spreadsheet)
+  var CALC_INSURANCE_RATE = 0.01; // fixed, not editable -- applies the same in both the $ Margin and Multiple methods
   var STATE_PAYROLL_RATES = { VIC: 0.0585, NSW: 0.0545, QLD: 0.052, SA: 0.0495 };
 
   var calcState = "VIC";
@@ -1693,21 +1692,18 @@
     var baseSuper = basePay + superAmt;
     var payrollAmt = baseSuper * payrollRate;
     var workersAmt = baseSuper * workersRate;
-
-    var insuranceAmt, marginAmt, chargeRate;
+    var insuranceAmt = baseSuper * CALC_INSURANCE_RATE; // applies the same in both methods
+    var marginAmt, chargeRate;
 
     if(calcMethod === "margin"){
-      insuranceAmt = baseSuper * CALC_INSURANCE_RATE;
       marginAmt = parseFloat(calcDollarMargin.value) || 0;
       chargeRate = baseSuper + payrollAmt + workersAmt + insuranceAmt + marginAmt;
-      document.getElementById("calcInsurancePctOut").textContent = (CALC_INSURANCE_RATE * 100).toFixed(1);
     } else {
       var multiple = parseFloat(calcMultiple.value) || 0;
-      insuranceAmt = 0; // not included in the Multiple method -- see note above
       chargeRate = basePay * multiple;
-      marginAmt = chargeRate - baseSuper - payrollAmt - workersAmt;
-      document.getElementById("calcInsurancePctOut").textContent = "0.0";
+      marginAmt = chargeRate - baseSuper - payrollAmt - workersAmt - insuranceAmt;
     }
+    document.getElementById("calcInsurancePctOut").textContent = (CALC_INSURANCE_RATE * 100).toFixed(1);
 
     var marginPct = chargeRate > 0 ? (marginAmt / chargeRate) * 100 : 0;
 
