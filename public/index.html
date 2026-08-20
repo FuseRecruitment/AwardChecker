@@ -395,6 +395,27 @@
     margin-top:18px; line-height:1.6;
   }
 
+  /* ---------- Rate Card lock overlay ---------- */
+  .lock-overlay{
+    position:fixed; inset:0; z-index:500;
+    background:rgba(21,26,54,0.55);
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .lock-box{
+    background:#fff; border-radius:16px; padding:28px 24px; max-width:320px; width:100%;
+    text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.3);
+  }
+  .lock-icon{ font-size:28px; margin-bottom:6px; }
+  .lock-box h2{ font-size:16px; font-weight:800; color:var(--ink); margin:0 0 6px; }
+  .lock-box p{ font-size:12.5px; color:var(--muted); margin:0 0 16px; line-height:1.5; }
+  .lock-box input[type=password]{
+    width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:10px;
+    font-size:15px; text-align:center; font-family:var(--sans);
+  }
+  .lock-box input[type=password]:focus{ outline:2px solid var(--spark); outline-offset:1px; border-color:var(--spark); }
+  .lock-error{ color:var(--bad); font-size:12px; font-weight:700; margin-top:8px; }
+
   /* ---------- Mobile-first enhancements for larger viewports ---------- */
   @media (min-width:640px){
     main{ padding:0 20px 28px; }
@@ -409,6 +430,17 @@
 </style>
 </head>
 <body>
+
+<div class="lock-overlay" id="rateCardLock" style="display:none;">
+  <div class="lock-box">
+    <div class="lock-icon">🔒</div>
+    <h2>Rate Card is locked</h2>
+    <p>Enter the password to view charge rates and pricing.</p>
+    <input type="password" id="lockPasswordInput" placeholder="Password" autocomplete="off">
+    <div class="lock-error" id="lockError" style="display:none;">Incorrect password — try again.</div>
+    <button class="primary-btn" id="lockSubmitBtn" style="margin-top:12px;">Unlock</button>
+  </div>
+</div>
 
 <div class="app-shell">
 <nav class="side-tabs">
@@ -1541,15 +1573,92 @@
 
   // ---------------- Tabs ----------------
   var tabbtns = document.querySelectorAll(".tabbtn");
+  var RATE_CARD_LOCK_KEY = "fuseRateCardUnlocked";
+
+  // ---------------- Rate Card password lock (soft lock, client-side) ----------------
+  // Honest limitation: since every tab lives in this one page (no
+  // separate server route per tab), this can only check a password in
+  // the browser -- it stops casual clicking-in, but someone with dev
+  // tools open could bypass it. That's an acceptable trade-off here
+  // since nothing genuinely secret sits behind it (award rates are
+  // public Fair Work data) -- this is about limiting casual access,
+  // not protecting a secret.
+  //
+  // CHANGE THE PASSWORD: this ships with the password "changeme" so it
+  // works out of the box -- change it before relying on this for real.
+  // To set your own password without ever typing it in plain text
+  // anywhere: open this page's browser console (F12) and run:
+  //   crypto.subtle.digest("SHA-256", new TextEncoder().encode("yournewpassword"))
+  //     .then(b => console.log(Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,"0")).join("")))
+  // then paste the printed hash in as RATE_CARD_PASSWORD_HASH below.
+  var RATE_CARD_PASSWORD_HASH = "057ba03d6c44104863dc7361fe4578965d1887360f90a0895882e58a6248fc86"; // "changeme"
+
+  function sha256Hex(text){
+    var data = new TextEncoder().encode(text);
+    return crypto.subtle.digest("SHA-256", data).then(function(buf){
+      return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2, "0"); }).join("");
+    });
+  }
+
+  function isRateCardUnlocked(){
+    try{ return sessionStorage.getItem(RATE_CARD_LOCK_KEY) === "yes"; }catch(e){ return false; }
+  }
+  function markRateCardUnlocked(){
+    try{ sessionStorage.setItem(RATE_CARD_LOCK_KEY, "yes"); }catch(e){}
+  }
+
+  var rateCardLock = document.getElementById("rateCardLock");
+  var lockPasswordInput = document.getElementById("lockPasswordInput");
+  var lockError = document.getElementById("lockError");
+  var lockSubmitBtn = document.getElementById("lockSubmitBtn");
+  var pendingTabBtn = null; // the tab button click we'll complete once unlocked
+
+  function showRateCardLock(){
+    rateCardLock.style.display = "flex";
+    lockError.style.display = "none";
+    lockPasswordInput.value = "";
+    setTimeout(function(){ lockPasswordInput.focus(); }, 50);
+  }
+  function hideRateCardLock(){
+    rateCardLock.style.display = "none";
+  }
+  function activateTab(btn){
+    tabbtns.forEach(function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+    document.querySelectorAll(".tabpanel").forEach(function(p){ p.classList.remove("active"); });
+    document.getElementById("tab-" + btn.getAttribute("data-tab")).classList.add("active");
+    if(btn.getAttribute("data-tab") === "synclog"){
+      loadSyncLog();
+    }
+  }
+
+  function attemptUnlock(){
+    var entered = lockPasswordInput.value;
+    sha256Hex(entered).then(function(hash){
+      if(hash === RATE_CARD_PASSWORD_HASH){
+        markRateCardUnlocked();
+        hideRateCardLock();
+        if(pendingTabBtn){ activateTab(pendingTabBtn); pendingTabBtn = null; }
+      } else {
+        lockError.style.display = "block";
+        lockPasswordInput.value = "";
+        lockPasswordInput.focus();
+      }
+    });
+  }
+  lockSubmitBtn.addEventListener("click", attemptUnlock);
+  lockPasswordInput.addEventListener("keydown", function(e){
+    if(e.key === "Enter") attemptUnlock();
+  });
+
   tabbtns.forEach(function(btn){
     btn.addEventListener("click", function(){
-      tabbtns.forEach(function(b){ b.classList.remove("active"); });
-      btn.classList.add("active");
-      document.querySelectorAll(".tabpanel").forEach(function(p){ p.classList.remove("active"); });
-      document.getElementById("tab-" + btn.getAttribute("data-tab")).classList.add("active");
-      if(btn.getAttribute("data-tab") === "synclog"){
-        loadSyncLog();
+      if(btn.getAttribute("data-tab") === "ratecard" && !isRateCardUnlocked()){
+        pendingTabBtn = btn;
+        showRateCardLock();
+        return;
       }
+      activateTab(btn);
     });
   });
 
