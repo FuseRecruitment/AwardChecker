@@ -4,7 +4,7 @@
  *   GET  /api/sync-log -> { entries: [ {...}, ... ] }  (newest first)
  *   POST /api/sync-log -> body is one log entry (any JSON object);
  *                         prepended to the list, older entries trimmed
- *                         beyond MAX_ENTRIES.
+ *                         beyond SYNC_LOG_MAX_ENTRIES.
  *
  * WHY THIS EXISTS (unchanged from the Vercel version):
  * /api/synced-rates only holds the CURRENT rates, with no history. This
@@ -34,48 +34,52 @@
  * DATA MIGRATION NOTE:
  * The existing Upstash log (25 entries at time of migration) was
  * exported and needs loading into Table Storage under the same key.
+ *
+ * SHARED KEY NAME:
+ * SYNC_LOG_KEY / SYNC_LOG_MAX_ENTRIES now live in shared/constants.js
+ * so the Timer Trigger (sync-timer.js) reads and writes the exact same
+ * row and trims to the same length.
  */
 
 import { app } from "@azure/functions";
 import { get, set } from "../shared/store.js";
 import { json, preflight } from "../shared/http.js";
+import { SYNC_LOG_KEY, SYNC_LOG_MAX_ENTRIES } from "../shared/constants.js";
 
-const LOG_KEY = "fuse-sync-log";
-const MAX_ENTRIES = 50;
 const METHODS = "GET, POST";
 
 app.http("sync-log", {
-    methods: ["GET", "POST", "OPTIONS"],
-    authLevel: "anonymous", // Entra Easy Auth gates this at the platform layer
-    handler: async (request, context) => {
-          if (request.method === "OPTIONS") {
-                  return preflight(METHODS);
-          }
-
-      try {
-              if (request.method === "GET") {
-                        const entries = (await get(LOG_KEY)) || [];
-                        return json({ entries }, 200, METHODS);
+      methods: ["GET", "POST", "OPTIONS"],
+      authLevel: "anonymous", // Entra Easy Auth gates this at the platform layer
+      handler: async (request, context) => {
+              if (request.method === "OPTIONS") {
+                        return preflight(METHODS);
               }
 
-            if (request.method === "POST") {
-                      const entry = await request.json();
-                      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-                                  return json({ error: "Expected a JSON log entry in the request body" }, 400, METHODS);
-                      }
-                      entry.loggedAt = Date.now(); // server-set, not trusted from the client
+        try {
+                  if (request.method === "GET") {
+                              const entries = (await get(SYNC_LOG_KEY)) || [];
+                              return json({ entries }, 200, METHODS);
+                  }
 
-                const existing = (await get(LOG_KEY)) || [];
-                      const updated = [entry, ...existing].slice(0, MAX_ENTRIES);
-                      await set(LOG_KEY, updated);
+                if (request.method === "POST") {
+                            const entry = await request.json();
+                            if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+                                          return json({ error: "Expected a JSON log entry in the request body" }, 400, METHODS);
+                            }
+                            entry.loggedAt = Date.now(); // server-set, not trusted from the client
 
-                return json({ ok: true, count: updated.length }, 200, METHODS);
-            }
+                    const existing = (await get(SYNC_LOG_KEY)) || [];
+                            const updated = [entry, ...existing].slice(0, SYNC_LOG_MAX_ENTRIES);
+                            await set(SYNC_LOG_KEY, updated);
 
-            return json({ error: "Method not allowed" }, 405, METHODS);
-      } catch (err) {
-              context.error("Sync log failed", err);
-              return json({ error: "Sync log unavailable", detail: String(err) }, 502, METHODS);
+                    return json({ ok: true, count: updated.length }, 200, METHODS);
+                }
+
+                return json({ error: "Method not allowed" }, 405, METHODS);
+        } catch (err) {
+                  context.error("Sync log failed", err);
+                  return json({ error: "Sync log unavailable", detail: String(err) }, 502, METHODS);
+        }
       }
-    }
 });
