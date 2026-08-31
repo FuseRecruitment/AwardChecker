@@ -35,46 +35,50 @@
  * The existing Upstash value for this key was exported during the
  * migration and needs loading into Table Storage under the same key
  * name, so the tool does not show "never synced" on cutover.
+ *
+ * SHARED KEY NAME:
+ * SYNCED_RATES_KEY now lives in shared/constants.js so the Timer
+ * Trigger (sync-timer.js) reads and writes the exact same row.
  */
 
 import { app } from "@azure/functions";
 import { get, set } from "../shared/store.js";
 import { json, preflight } from "../shared/http.js";
+import { SYNCED_RATES_KEY } from "../shared/constants.js";
 
-const STORE_KEY = "fuse-synced-rates";
 const METHODS = "GET, POST";
 
 app.http("synced-rates", {
-    methods: ["GET", "POST", "OPTIONS"],
-    authLevel: "anonymous", // Entra Easy Auth gates this at the platform layer
-    handler: async (request, context) => {
-          if (request.method === "OPTIONS") {
-                  return preflight(METHODS);
-          }
-
-      try {
-              if (request.method === "GET") {
-                        const stored = await get(STORE_KEY);
-                        if (!stored) {
-                                    return json({ rates: null, savedAt: null }, 200, METHODS);
-                        }
-                        return json({ rates: stored.rates, savedAt: stored.savedAt }, 200, METHODS);
+      methods: ["GET", "POST", "OPTIONS"],
+      authLevel: "anonymous", // Entra Easy Auth gates this at the platform layer
+      handler: async (request, context) => {
+              if (request.method === "OPTIONS") {
+                        return preflight(METHODS);
               }
 
-            if (request.method === "POST") {
-                      const body = await request.json();
-                      if (!body || typeof body.rates !== "object" || body.rates === null) {
-                                  return json({ error: "Expected JSON body with a 'rates' object" }, 400, METHODS);
-                      }
-                      const savedAt = Date.now(); // server-set, not trusted from the client
-                await set(STORE_KEY, { rates: body.rates, savedAt });
-                      return json({ ok: true, savedAt }, 200, METHODS);
-            }
+        try {
+                  if (request.method === "GET") {
+                              const stored = await get(SYNCED_RATES_KEY);
+                              if (!stored) {
+                                            return json({ rates: null, savedAt: null }, 200, METHODS);
+                              }
+                              return json({ rates: stored.rates, savedAt: stored.savedAt }, 200, METHODS);
+                  }
 
-            return json({ error: "Method not allowed" }, 405, METHODS);
-      } catch (err) {
-              context.error("Shared rate store failed", err);
-              return json({ error: "Shared rate store unavailable", detail: String(err) }, 502, METHODS);
+                if (request.method === "POST") {
+                            const body = await request.json();
+                            if (!body || typeof body.rates !== "object" || body.rates === null) {
+                                          return json({ error: "Expected JSON body with a 'rates' object" }, 400, METHODS);
+                            }
+                            const savedAt = Date.now(); // server-set, not trusted from the client
+                    await set(SYNCED_RATES_KEY, { rates: body.rates, savedAt });
+                            return json({ ok: true, savedAt }, 200, METHODS);
+                }
+
+                return json({ error: "Method not allowed" }, 405, METHODS);
+        } catch (err) {
+                  context.error("Shared rate store failed", err);
+                  return json({ error: "Shared rate store unavailable", detail: String(err) }, 502, METHODS);
+        }
       }
-    }
 });
