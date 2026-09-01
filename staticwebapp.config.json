@@ -1,1 +1,15 @@
-{"routes":[],"auth":{"rolesSource":"/api/getRolesForUsers","identityProviders":{"azureActiveDirectory":{"registration":{"openIdIssuer":"https://login.microsoftonline.com/2dbb29c4-cd8a-4a6a-b8b7-85370b65ec17","clientIdSettingName":"AZURE_CLIENT_ID","clientSecretSettingName":"AZURE_CLIENT_SECRET_APP_SETTING_NAME"}}}}}
+{
+  "routes": [],
+  "auth": {
+    "rolesSource": "/api/getRolesForUsers",
+    "identityProviders": {
+      "azureActiveDirectory": {
+        "registration": {
+          "openIdIssuer": "https://login.microsoftonline.com/2dbb29c4-cd8a-4a6a-b8b7-85370b65ec17/v2.0",
+          "clientIdSettingName": "AZURE_CLIENT_ID",
+          "clientSecretSettingName": "AZURE_CLIENT_SECRET_APP_SETTING_NAME"
+        }
+      }
+    }
+  }
+}
