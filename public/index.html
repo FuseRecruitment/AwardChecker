@@ -395,27 +395,6 @@
     margin-top:18px; line-height:1.6;
   }
 
-  /* ---------- Rate Card lock overlay ---------- */
-  .lock-overlay{
-    position:fixed; inset:0; z-index:500;
-    background:rgba(21,26,54,0.55);
-    display:flex; align-items:center; justify-content:center;
-    padding:20px;
-  }
-  .lock-box{
-    background:#fff; border-radius:16px; padding:28px 24px; max-width:320px; width:100%;
-    text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.3);
-  }
-  .lock-icon{ font-size:28px; margin-bottom:6px; }
-  .lock-box h2{ font-size:16px; font-weight:800; color:var(--ink); margin:0 0 6px; }
-  .lock-box p{ font-size:12.5px; color:var(--muted); margin:0 0 16px; line-height:1.5; }
-  .lock-box input[type=password]{
-    width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:10px;
-    font-size:15px; text-align:center; font-family:var(--sans);
-  }
-  .lock-box input[type=password]:focus{ outline:2px solid var(--spark); outline-offset:1px; border-color:var(--spark); }
-  .lock-error{ color:var(--bad); font-size:12px; font-weight:700; margin-top:8px; }
-
   /* ---------- Mobile-first enhancements for larger viewports ---------- */
   @media (min-width:640px){
     main{ padding:0 20px 28px; }
@@ -431,16 +410,6 @@
 </head>
 <body>
 
-<div class="lock-overlay" id="rateCardLock" style="display:none;">
-  <div class="lock-box">
-    <div class="lock-icon">🔒</div>
-    <h2>Rate Card is locked</h2>
-    <p>Enter the password to view charge rates and pricing.</p>
-    <input type="password" id="lockPasswordInput" placeholder="Password" autocomplete="off">
-    <div class="lock-error" id="lockError" style="display:none;">Incorrect password — try again.</div>
-    <button class="primary-btn" id="lockSubmitBtn" style="margin-top:12px;">Unlock</button>
-  </div>
-</div>
 
 <div class="app-shell">
 <nav class="side-tabs">
@@ -935,9 +904,9 @@
   // Point this at your deployed proxy (see fwc-mapd-proxy.worker.js),
   // never at the FWC API directly -- that requires a server-side key.
   // Leave blank to keep the button disabled with a setup message.
-  var FWC_PROXY_URL = "/api/award-rates"; // relative path works if this file is served from public/ in the same Vercel project as api/award-rates.js
+  var FWC_PROXY_URL = "https://func-awardchecker-prod-ckecfpd2h5g7fvd6.australiaeast-01.azurewebsites.net/api/award-rates"; // relative path works if this file is served from public/ in the same Vercel project as api/award-rates.js
   var FWC_PROXY_TOKEN = ""; // must match PROXY_SHARED_SECRET set in Vercel -- generate one with `openssl rand -hex 24` or a password manager
-  var SHARED_RATES_URL = "/api/synced-rates"; // moved up here -- was previously declared after its first use, leaving it `undefined` on page load
+  var SHARED_RATES_URL = "https://func-awardchecker-prod-ckecfpd2h5g7fvd6.australiaeast-01.azurewebsites.net/api/synced-rates"; // moved up here -- was previously declared after its first use, leaving it `undefined` on page load
 
   var syncRatesBtn = document.getElementById("syncRatesBtn");
   var syncStatus = document.getElementById("syncStatus");
@@ -1244,7 +1213,7 @@
   }
 
   // ---------------- Sync log (shared, third tab) ----------------
-  var SYNC_LOG_URL = "/api/sync-log";
+  var SYNC_LOG_URL = "https://func-awardchecker-prod-ckecfpd2h5g7fvd6.australiaeast-01.azurewebsites.net/api/sync-log";
 
   function pushLogEntry(entry){
     fetch(SYNC_LOG_URL, {
@@ -1573,45 +1542,6 @@
 
   // ---------------- Tabs ----------------
   var tabbtns = document.querySelectorAll(".tabbtn");
-  var RATE_CARD_LOCK_KEY = "fuseRateCardUnlocked";
-  var VERIFY_PASSWORD_URL = "/api/verify-ratecard-password";
-
-  // ---------------- Rate Card password lock (soft lock) ----------------
-  // Honest limitation: since every tab lives in this one page (no
-  // separate server route per tab), this only gates whether the tab's
-  // content is SHOWN -- it stops casual clicking-in, but someone with
-  // dev tools open could bypass it. That's an acceptable trade-off here
-  // since nothing genuinely secret sits behind it (award rates are
-  // public Fair Work data) -- this is about limiting casual access to
-  // the pricing/margin process, not protecting a secret at rest.
-  //
-  // The actual password comparison happens server-side (see
-  // api/verify-ratecard-password.js), reading RATE_CARD_PASSWORD from
-  // Vercel's environment variables -- the real password never ships in
-  // this file or reaches the browser in plain form.
-
-  function isRateCardUnlocked(){
-    try{ return sessionStorage.getItem(RATE_CARD_LOCK_KEY) === "yes"; }catch(e){ return false; }
-  }
-  function markRateCardUnlocked(){
-    try{ sessionStorage.setItem(RATE_CARD_LOCK_KEY, "yes"); }catch(e){}
-  }
-
-  var rateCardLock = document.getElementById("rateCardLock");
-  var lockPasswordInput = document.getElementById("lockPasswordInput");
-  var lockError = document.getElementById("lockError");
-  var lockSubmitBtn = document.getElementById("lockSubmitBtn");
-  var pendingTabBtn = null; // the tab button click we'll complete once unlocked
-
-  function showRateCardLock(){
-    rateCardLock.style.display = "flex";
-    lockError.style.display = "none";
-    lockPasswordInput.value = "";
-    setTimeout(function(){ lockPasswordInput.focus(); }, 50);
-  }
-  function hideRateCardLock(){
-    rateCardLock.style.display = "none";
-  }
   function activateTab(btn){
     tabbtns.forEach(function(b){ b.classList.remove("active"); });
     btn.classList.add("active");
@@ -1622,59 +1552,7 @@
     }
   }
 
-  function showLockError(message){
-    lockError.textContent = message;
-    lockError.style.display = "block";
-    lockPasswordInput.value = "";
-    lockPasswordInput.focus();
-  }
-
-  function attemptUnlock(){
-    var entered = lockPasswordInput.value;
-    lockSubmitBtn.disabled = true;
-    lockSubmitBtn.textContent = "Checking…";
-    fetch(VERIFY_PASSWORD_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: entered })
-    })
-      .then(function(res){ return res.json().then(function(body){ return { status: res.status, body: body }; }); })
-      .then(function(result){
-        lockSubmitBtn.disabled = false;
-        lockSubmitBtn.textContent = "Unlock";
-        if(result.body.ok){
-          markRateCardUnlocked();
-          hideRateCardLock();
-          if(pendingTabBtn){ activateTab(pendingTabBtn); pendingTabBtn = null; }
-        } else if(result.body.error){
-          showLockError("Couldn't check the password just now (" + result.body.error + ").");
-        } else {
-          showLockError("Incorrect password — try again.");
-        }
-      })
-      .catch(function(e){
-        lockSubmitBtn.disabled = false;
-        lockSubmitBtn.textContent = "Unlock";
-        showLockError("Couldn't reach the server to check the password. Check your connection and try again.");
-      });
-  }
-  lockSubmitBtn.addEventListener("click", attemptUnlock);
-  lockPasswordInput.addEventListener("keydown", function(e){
-    if(e.key === "Enter") attemptUnlock();
-  });
-
-  tabbtns.forEach(function(btn){
-    btn.addEventListener("click", function(){
-      if(btn.getAttribute("data-tab") === "ratecard" && !isRateCardUnlocked()){
-        pendingTabBtn = btn;
-        showRateCardLock();
-        return;
-      }
-      activateTab(btn);
-    });
-  });
-
-  document.getElementById("refreshLogBtn").addEventListener("click", loadSyncLog);
+  tabbtns.forEach(function(btn){ btn.addEventListener("click", function(){ activateTab(btn); }); });  document.getElementById("refreshLogBtn").addEventListener("click", loadSyncLog);
 
   // ---------------- Award Check tab ----------------
   var acAwardSelect = document.getElementById("acAwardSelect");
