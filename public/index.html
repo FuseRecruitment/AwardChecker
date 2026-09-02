@@ -6,7 +6,7 @@
   <style>html{visibility:hidden}</style>
 <script>
   (function(){
-      function reveal(){ document.documentElement.style.visibility = ''; }
+      function reveal(){ document.documentElement.style.setProperty('visibility','visible','important'); }
       var framed = false;
       try { framed = window.self !== window.top; } catch(e) { framed = true; }
       if (framed) { reveal(); return; }
