@@ -1,8 +1,26 @@
 <!DOCTYPE html>
 <html lang="en-AU">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Access gate: skip when embedded (e.g. Bullhorn custom tab, already access-controlled there);
+       require Microsoft sign-in only for direct/top-level access. -->
+  <style>html{visibility:hidden}</style>
+<script>
+  (function(){
+      function reveal(){ document.documentElement.style.visibility = ''; }
+      var framed = false;
+      try { framed = window.self !== window.top; } catch(e) { framed = true; }
+      if (framed) { reveal(); return; }
+      fetch('/.auth/me').then(function(r){ return r.json(); }).then(function(data){
+            var principal = data && data.clientPrincipal;
+            if (principal) { reveal(); }
+            else {
+                    window.location.href = '/.auth/login/aad?post_login_redirect_uri=' + encodeURIComponent(window.location.pathname + window.location.search);
+            }
+      }).catch(function(){ reveal(); });
+  })();
+</script>
+  
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rate Card &amp; Award Check — Fuse Recruitment</title>
 <style>
   :root{
