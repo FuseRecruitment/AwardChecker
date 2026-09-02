@@ -152,7 +152,7 @@ export function applyFwcRates(awardKey, currentRates, fwcRows) {
 
                                     if (match && !isNaN(rate)) {
                                             if (rate !== existing) {
-                                                      changes.push({ award: award.code, classId: local.id, before: existing, after: rate });
+                                                      changes.push({ award: award.code, classId: local.id, label: local.matchKey, before: existing, after: rate });
                                             }
                                             updatedRates[local.id] = rate;
                                             updated++;
