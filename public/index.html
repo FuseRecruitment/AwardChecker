@@ -44,7 +44,8 @@
   })();
 </script>
   
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rate Card &amp; Award Check — Fuse Recruitment</title>
 <style>
   :root{
@@ -244,6 +245,15 @@
   .segmented button.active{ background:var(--ink); color:#fff; }
   .segmented button + button{ border-left:1.5px solid var(--line); }
 
+  .checklist{ border:1.5px solid var(--line); border-radius:10px; overflow:hidden; }
+  .checklist-item{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; font-size:13px;
+    color:var(--ink); cursor:pointer; font-weight:600;
+  }
+  .checklist-item:not(:last-child){ border-bottom:1px solid var(--line); }
+  .checklist-item input{ flex:0 0 auto; width:16px; height:16px; accent-color:var(--spark); cursor:pointer; }
+  .checklist-item .rate{ margin-left:auto; font-family:var(--mono); color:var(--muted); font-size:12px; }
+
   .helper{ font-size:11.5px; color:var(--muted); margin-top:6px; line-height:1.4; }
   .note-box{
     background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:10px;
@@ -280,6 +290,23 @@
   }
   .margin-alert.show{ display:flex; }
   .margin-alert .ico{ flex:0 0 auto; }
+
+  .loss-alert{
+    display:none; align-items:flex-start; gap:8px; margin-top:12px; padding:12px 14px;
+    background:var(--bad); border:1px solid var(--bad); border-radius:10px;
+    color:#fff; font-size:12.5px; font-weight:600; line-height:1.5;
+  }
+  .loss-alert.show{ display:flex; }
+  .loss-alert .ico{ flex:0 0 auto; font-size:16px; }
+  .loss-alert b{ font-weight:800; }
+
+  .oncost-warn{
+    display:none; align-items:flex-start; gap:8px; margin-top:12px; padding:10px 12px;
+    background:var(--surface); border-left:3px solid var(--spark); border-radius:8px;
+    color:var(--ink); font-size:12px; font-weight:600; line-height:1.5;
+  }
+  .oncost-warn.show{ display:flex; }
+  .oncost-warn .ico{ flex:0 0 auto; color:var(--spark); }
 
   /* ---------- Cost / Charge readout ---------- */
   .readout-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
@@ -320,6 +347,24 @@
   }
   table.penalty td.num{ font-family:var(--mono); font-weight:700; text-align:right; }
   table.penalty tr:last-child td{ border-bottom:none; }
+
+  /* ---------- Multi-classification comparison table ---------- */
+  .multi-table-wrap{ overflow-x:auto; margin-top:14px; -webkit-overflow-scrolling:touch; }
+  table.multi-table{ border-collapse:collapse; width:100%; min-width:640px; }
+  table.multi-table th, table.multi-table td{
+    text-align:right; padding:8px 10px; font-size:12px; border-bottom:1px solid var(--line); white-space:nowrap;
+  }
+  table.multi-table th{
+    color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:0.04em; font-weight:800;
+    background:var(--surface); position:sticky; top:0;
+  }
+  table.multi-table th:first-child, table.multi-table td:first-child{
+    text-align:left; position:sticky; left:0; background:var(--card); font-weight:700; color:var(--ink);
+  }
+  table.multi-table th:first-child{ background:var(--surface); }
+  table.multi-table td{ font-family:var(--mono); }
+  table.multi-table td.charge{ color:var(--ink); font-weight:700; }
+  table.multi-table tr:last-child td{ border-bottom:none; }
 
   /* ---------- Quote card ---------- */
   .quote-card{
@@ -437,6 +482,27 @@
     margin-top:18px; line-height:1.6;
   }
 
+  /* ---------- Rate Card lock overlay ---------- */
+  .lock-overlay{
+    position:fixed; inset:0; z-index:500;
+    background:rgba(21,26,54,0.55);
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .lock-box{
+    background:#fff; border-radius:16px; padding:28px 24px; max-width:320px; width:100%;
+    text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.3);
+  }
+  .lock-icon{ font-size:28px; margin-bottom:6px; }
+  .lock-box h2{ font-size:16px; font-weight:800; color:var(--ink); margin:0 0 6px; }
+  .lock-box p{ font-size:12.5px; color:var(--muted); margin:0 0 16px; line-height:1.5; }
+  .lock-box input[type=password]{
+    width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:10px;
+    font-size:15px; text-align:center; font-family:var(--sans);
+  }
+  .lock-box input[type=password]:focus{ outline:2px solid var(--spark); outline-offset:1px; border-color:var(--spark); }
+  .lock-error{ color:var(--bad); font-size:12px; font-weight:700; margin-top:8px; }
+
   /* ---------- Mobile-first enhancements for larger viewports ---------- */
   @media (min-width:640px){
     main{ padding:0 20px 28px; }
@@ -452,6 +518,16 @@
 </head>
 <body>
 
+<div class="lock-overlay" id="rateCardLock" style="display:none;">
+  <div class="lock-box">
+    <div class="lock-icon">🔒</div>
+    <h2>Rate Card is locked</h2>
+    <p>Enter the password to view charge rates and pricing.</p>
+    <input type="password" id="lockPasswordInput" placeholder="Password" autocomplete="off">
+    <div class="lock-error" id="lockError" style="display:none;">Incorrect password — try again.</div>
+    <button class="primary-btn" id="lockSubmitBtn" style="margin-top:12px;">Unlock</button>
+  </div>
+</div>
 
 <div class="app-shell">
 <nav class="side-tabs">
@@ -467,8 +543,7 @@
   </div>
 </div>
 <div class="side-divider"></div>
-  <button class="tabbtn active" data-tab="calculator" id="tabbtn-calculator"><span class="dot"></span>Calculator</button>
-  <button class="tabbtn" data-tab="ratecard" id="tabbtn-ratecard"><span class="dot"></span>Rate Card</button>
+  <button class="tabbtn active" data-tab="ratecard" id="tabbtn-ratecard"><span class="dot"></span>Pay Calculator</button>
   <button class="tabbtn" data-tab="awardcheck" id="tabbtn-awardcheck"><span class="dot"></span>Award Check</button>
   <div class="side-divider" style="margin-top:auto;"></div>
   <div class="sync-row" style="padding:0 16px;">
@@ -484,17 +559,17 @@
 <main>
 
   <!-- ============ RATE CARD TAB ============ -->
-  <section class="tabpanel" id="tab-ratecard">
+  <section class="tabpanel active" id="tab-ratecard">
 
     <details class="howto">
       <summary>How to use this</summary>
       <div class="howto-body">
         <ol>
           <li>Pick the award and classification that matches the worker.</li>
-          <li>Choose Permanent/FT or Casual — casual automatically adds the 25% loading.</li>
-          <li>Drag the margin slider to set what Fuse charges on top of cost. A red warning appears if it drops below 20%.</li>
+          <li>Choose Permanent/FT or Casual — this sets the Full Time Rate or Casual Rate (+25%) used below.</li>
+          <li>Pick the state (payroll tax differs by state) and a method: <b>$ Margin</b> (set a flat dollar profit) or <b>Multiple</b> (set a multiple of the rate, margin is whatever's left over).</li>
           <li>The <b>Charge to client</b> figure is what you'd quote — <b>Cost to agency</b> is what it actually costs Fuse to employ them.</li>
-          <li>Fill in the client name and (optionally) role and weeks to get a full quote you can copy or screenshot.</li>
+          <li>Fill in the client name to get a full quote you can copy.</li>
         </ol>
       </div>
     </details>
@@ -505,19 +580,20 @@
         <label class="field-label">Modern award</label>
         <select id="awardSelect"></select>
       </div>
-      <div class="grid2">
-        <div class="field">
-          <label class="field-label">Classification</label>
-          <select id="classSelect"></select>
-        </div>
-        <div class="field">
-          <label class="field-label">Employment type
-            <button type="button" class="help-tip" aria-expanded="false" data-help="empType-help">?</button>
-          </label>
-          <div class="segmented" id="empTypeSeg">
-            <button data-val="permanent" class="active">Perm/FT</button>
-            <button data-val="casual">Casual +25%</button>
-          </div>
+      <div class="field">
+        <label class="field-label">Classification(s)
+          <button type="button" class="help-tip" aria-expanded="false" data-help="classCheck-help">?</button>
+        </label>
+        <div class="checklist" id="classChecklist"></div>
+      </div>
+      <div class="help-text" id="classCheck-help">Tick one classification for the usual single breakdown, or tick several to get a comparison table covering all of them at once — same calculator settings applied to every row.</div>
+      <div class="field">
+        <label class="field-label">Employment type
+          <button type="button" class="help-tip" aria-expanded="false" data-help="empType-help">?</button>
+        </label>
+        <div class="segmented" id="empTypeSeg">
+          <button data-val="permanent" class="active">Perm/FT</button>
+          <button data-val="casual">Casual +25%</button>
         </div>
       </div>
       <div class="help-text" id="empType-help">Casual workers are paid a 25% loading on top of the base rate instead of getting leave entitlements. If the worker gets sick leave/annual leave, choose Permanent/FT.</div>
@@ -525,59 +601,112 @@
     </div>
 
     <div class="card">
-      <h2><span class="num">02</span>Oncosts &amp; margin
+      <h2><span class="num">02</span>Pay calculator
         <button type="button" class="help-tip" aria-expanded="false" data-help="oncost-help">?</button>
       </h2>
-      <div class="help-text" id="oncost-help">Oncosts are the extra costs Fuse pays on top of a worker's wage — super, WorkCover insurance and payroll tax. They're added automatically below; you don't need to enter anything here.</div>
+      <div class="help-text" id="oncost-help">The Full Time Rate or Casual Rate comes automatically from the award and classification picked above. Pick the state (payroll tax differs by state) and how to work out the charge rate: <b>$ Margin</b> adds a flat dollar profit on top of cost, <b>% Margin</b> adds margin as a percentage of the charge rate, <b>Multiple</b> sets the charge rate directly as a multiple of the rate with margin left over, <b>Target Charge</b> works backwards from a charge rate you already need to hit (e.g. to match a competitor) and shows what margin that leaves — the pay rate itself always stays the award minimum, never something you can wind down.</div>
 
-      <div style="margin-top:14px;">
-        <div class="margin-row">
-          <label class="field-label" style="margin:0;">Margin
-            <button type="button" class="help-tip" aria-expanded="false" data-help="margin-help">?</button>
-          </label>
-          <span class="margin-value" id="marginValue">25%</span>
-        </div>
-        <div class="help-text" id="margin-help">This is what Fuse adds on top of cost as profit. Drag right to charge more, left to charge less. Below 20% you'll get a warning — that's usually too thin to cover overheads.</div>
-        <div class="fuse-track-wrap">
-          <input type="range" id="marginSlider" min="10" max="60" value="25" step="1">
-          <div class="fuse-ticks"><span>10%</span><span>60%</span></div>
-        </div>
-        <div class="margin-alert" id="marginAlert">
-          <span class="ico">⚠</span>
-          <span>Margin is below 20% minimum — this quote may not cover overheads. Review before sending to a client.</span>
-        </div>
-        <div class="multiplier-row">
-          <span class="field-label" style="margin:0;">Multiplier (for reference)
-            <button type="button" class="help-tip" aria-expanded="false" data-help="multiplier-help">?</button>
-          </span>
-          <span class="multiplier-value" id="multiplierValue">1.00×</span>
-        </div>
-        <div class="help-text" id="multiplier-help">The charge rate as a straight multiple of the base pay rate — e.g. "1.5×" means the charge rate is 1.5 times the award rate. This is calculated from the margin above, not something you set directly. A 20% margin and a 20% mark-up (multiplier) aren't the same number, which is why both are shown.</div>
-      </div>
-
-      <div class="readout-grid">
-        <div class="readout cost">
-          <div class="rlabel">Cost to agency</div>
-          <div class="rvalue" id="costValue">$0.00</div>
-          <div class="rsub">what it costs Fuse per hour</div>
-        </div>
-        <div class="readout charge">
-          <div class="rlabel">Charge to client</div>
-          <div class="rvalue" id="chargeValue">$0.00</div>
-          <div class="rsub">what you quote the client</div>
+      <div class="field" style="margin-top:14px;">
+        <label class="field-label">State</label>
+        <div class="segmented" id="calcStateSeg">
+          <button data-val="VIC" class="active">VIC</button>
+          <button data-val="NSW">NSW</button>
+          <button data-val="QLD">QLD</button>
+          <button data-val="SA">SA</button>
         </div>
       </div>
 
-      <div class="breakdown-list">
-        <div class="breakdown-row"><span>Base ordinary rate used</span><span class="amt" id="bdBase">$0.00/hr</span></div>
-        <div class="breakdown-row"><span>Superannuation (12%)</span><span class="amt" id="bdSuper">$0.00/hr</span></div>
-        <div class="breakdown-row"><span>WorkCover (1%)</span><span class="amt" id="bdWorkcover">$0.00/hr</span></div>
-        <div class="breakdown-row"><span>Payroll tax (5.45%)</span><span class="amt" id="bdPayroll">$0.00/hr</span></div>
-        <div class="breakdown-row total"><span>Margin per hour (<span id="bdMarginPct">25</span>%)</span><span class="amt" id="bdMarginDollar">$0.00/hr</span></div>
+      <div class="field" style="margin-bottom:0;">
+        <label class="field-label">Method</label>
+        <div class="segmented" id="calcMethodSeg">
+          <button data-val="multiple" class="active">Multiple</button>
+          <button data-val="margin">$ Margin</button>
+          <button data-val="pctmargin">% Margin</button>
+          <button data-val="charge">Target Charge</button>
+        </div>
+      </div>
+
+      <div class="field calc-multiple-only" style="margin-top:14px;">
+        <label class="field-label">Multiple</label>
+        <input type="number" id="calcMultiple" class="calc-editable" value="1.4" min="1" step="0.01">
+      </div>
+      <div class="field calc-margin-only" style="display:none; margin-top:14px;">
+        <label class="field-label">$ Margin ($/hr)</label>
+        <input type="number" id="calcDollarMargin" class="calc-editable" value="6.50" min="0" step="0.01">
+      </div>
+      <div class="field calc-pctmargin-only" style="display:none; margin-top:14px;">
+        <label class="field-label">% Margin (%)</label>
+        <input type="number" id="calcPctMargin" class="calc-editable" value="25.0" min="0" max="99" step="0.1">
+      </div>
+      <div class="field calc-charge-only" style="display:none; margin-top:14px;">
+        <label class="field-label">Target charge rate ($/hr)
+          <button type="button" class="help-tip" aria-expanded="false" data-help="targetCharge-help">?</button>
+        </label>
+        <input type="number" id="calcTargetCharge" class="calc-editable" value="45.00" min="0" step="0.01">
+      </div>
+      <div class="help-text calc-charge-only" style="display:none;" id="targetCharge-help">Working backwards from a charge rate you need to hit — e.g. to compete with another agency's quote. Shows the resulting margin below, so you can see exactly how much room you actually have to move before you're cutting into break-even or below.</div>
+      <div class="grid2">
+        <div class="field">
+          <label class="field-label">WorkCover (%)</label>
+          <input type="number" id="calcWorkersRate" class="calc-editable" value="5.0" min="0" step="0.1">
+        </div>
+        <div class="field">
+          <label class="field-label">Insurance (%)</label>
+          <input type="number" id="calcInsuranceRate" class="calc-editable" value="1.0" min="0" step="0.1">
+        </div>
+      </div>
+
+      <div class="loss-alert" id="lossAlert">
+        <span class="ico">⛔</span>
+        <span>This charge rate is <b>below cost</b> — Fuse would lose money on every hour worked at this rate. The pay rate, super and payroll tax can't be reduced; only WorkCover and Insurance have any room to move, and only slightly.</span>
+      </div>
+
+      <div class="oncost-warn" id="oncostWarn">
+        <span class="ico">⚠</span>
+        <span id="oncostWarnText"></span>
+      </div>
+
+      <div class="margin-alert" id="marginAlert">
+        <span class="ico">⚠</span>
+        <span>Margin is below 20% minimum — this quote may not cover overheads. Review before sending to a client.</span>
+      </div>
+
+      <div id="singleOutput">
+        <div class="readout-grid">
+          <div class="readout cost">
+            <div class="rlabel">Cost to agency</div>
+            <div class="rvalue" id="costValue">$0.00</div>
+            <div class="rsub">what it costs Fuse per hour</div>
+          </div>
+          <div class="readout charge">
+            <div class="rlabel">Charge to client</div>
+            <div class="rvalue" id="chargeValue">$0.00</div>
+            <div class="rsub">what you quote the client</div>
+          </div>
+        </div>
+
+        <div class="breakdown-list">
+          <div class="breakdown-row"><span id="bdBaseLabel">Full Time Rate</span><span class="amt" id="bdBase">$0.00/hr</span></div>
+          <div class="breakdown-row"><span>Super (<span id="bdSuperPct">12.0</span>%)</span><span class="amt" id="bdSuper">$0.00/hr</span></div>
+          <div class="breakdown-row"><span>Rate + Super</span><span class="amt" id="bdBaseSuper">$0.00/hr</span></div>
+          <div class="breakdown-row"><span>Payroll tax (<span id="bdPayrollPct">5.85</span>%)</span><span class="amt" id="bdPayroll">$0.00/hr</span></div>
+          <div class="breakdown-row"><span>WorkCover (<span id="bdWorkersPct">5.0</span>%)</span><span class="amt" id="bdWorkcover">$0.00/hr</span></div>
+          <div class="breakdown-row"><span>Insurance (<span id="bdInsurancePct">1.0</span>%)</span><span class="amt" id="bdInsurance">$0.00/hr</span></div>
+          <div class="breakdown-row total"><span>Margin (<span id="bdMarginPct">0.0</span>%)</span><span class="amt" id="bdMarginDollar">$0.00/hr</span></div>
+        </div>
+      </div>
+
+      <div id="multiOutput" style="display:none;">
+        <div class="multi-table-wrap">
+          <table class="multi-table" id="multiTable">
+            <thead><tr id="multiTableHead"></tr></thead>
+            <tbody id="multiTableBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="penaltyCard">
       <h2><span class="num">03</span>Penalty rates — <span id="penaltyAwardName">select an award</span></h2>
       <table class="penalty">
         <thead>
@@ -587,7 +716,7 @@
       </table>
     </div>
 
-    <div class="card">
+    <div class="card" id="quoteDetailsCard">
       <h2><span class="num">04</span>Quote details</h2>
       <div class="field">
         <label class="field-label">Client name</label>
@@ -595,7 +724,7 @@
       </div>
     </div>
 
-    <div class="quote-card">
+    <div class="quote-card" id="singleQuoteCard">
       <div class="quote-top">
         <div>
           <div class="lbl">Prepared by</div>
@@ -618,6 +747,27 @@
       </div>
       <button class="primary-btn" id="copyRatesBtn">Copy charge rates</button>
       <div class="copy-toast" id="copyRatesToast">Copied to clipboard ✓</div>
+    </div>
+
+    <div class="quote-card" id="multiQuoteCard" style="display:none;">
+      <div class="quote-top">
+        <div>
+          <div class="lbl">Prepared by</div>
+          <div class="val" id="qAgencyMulti">Fuse Recruitment</div>
+          <div class="qdate" id="qDateMulti"></div>
+        </div>
+        <div style="text-align:right;">
+          <div class="lbl">Prepared for</div>
+          <div class="val" id="qClientMulti">—</div>
+        </div>
+      </div>
+      <div class="quote-divider"></div>
+      <div class="quote-award">
+        <b id="qAwardNameMulti">—</b><br>
+        <span id="qClassCountMulti">0 classifications selected</span>
+      </div>
+      <button class="primary-btn" id="copyMultiBtn">Copy full rate card</button>
+      <div class="copy-toast" id="copyMultiToast">Copied to clipboard ✓</div>
     </div>
 
     <p class="disclaimer">Rates are indicative, based on published FY2026–27 award pay guide summaries as at July 2026. Site, industry, cold work and dangerous goods allowances are not included. Confirm current rates against the official Fair Work pay guide before quoting a client.</p>
@@ -694,87 +844,6 @@
       <div class="fw-warning" id="fwWarning" style="display:none;">
         <span>⚠</span>
         <span>Seek payroll advice immediately. Fair Work penalties start at <b>$18,780</b> per contravention.</span>
-      </div>
-    </div>
-
-  </section>
-
-  <!-- ============ CALCULATOR TAB ============ -->
-  <section class="tabpanel active" id="tab-calculator">
-
-    <details class="howto">
-      <summary>How to use this</summary>
-      <div class="howto-body">
-        <ol>
-          <li>Pick the state — payroll tax differs by state, so the calculation changes underneath.</li>
-          <li>Choose which method to calculate by: <b>$ Margin</b> (you set a flat dollar profit, charge rate is built up from cost) or <b>Multiple</b> (you set a multiple of base pay, margin is whatever's left over).</li>
-          <li>Yellow fields are editable — everything else updates automatically.</li>
-        </ol>
-      </div>
-    </details>
-
-    <div class="card">
-      <h2><span class="num">01</span>State &amp; method</h2>
-      <div class="field">
-        <label class="field-label">State</label>
-        <div class="segmented" id="calcStateSeg">
-          <button data-val="VIC" class="active">VIC</button>
-          <button data-val="NSW">NSW</button>
-          <button data-val="QLD">QLD</button>
-          <button data-val="SA">SA</button>
-        </div>
-      </div>
-      <div class="field" style="margin-bottom:0;">
-        <label class="field-label">Method
-          <button type="button" class="help-tip" aria-expanded="false" data-help="calcMethod-help">?</button>
-        </label>
-        <div class="segmented" id="calcMethodSeg">
-          <button data-val="multiple" class="active">Multiple</button>
-          <button data-val="margin">$ Margin</button>
-        </div>
-      </div>
-      <div class="help-text" id="calcMethod-help">$ Margin builds the charge rate up from cost plus a flat dollar profit you set. Multiple instead sets the charge rate directly as base pay × a multiple, and margin becomes whatever's left over — the two methods usually give slightly different results for the same role.</div>
-    </div>
-
-    <div class="card">
-      <h2><span class="num">02</span>Inputs</h2>
-      <div class="grid2">
-        <div class="field">
-          <label class="field-label">Base pay ($/hr)</label>
-          <input type="number" id="calcBasePay" class="calc-editable" value="33.50" min="0" step="0.01">
-        </div>
-        <div class="field">
-          <label class="field-label">Workers comp (%)</label>
-          <input type="number" id="calcWorkersRate" class="calc-editable" value="5.0" min="0" step="0.1">
-        </div>
-      </div>
-
-      <div class="field calc-margin-only" style="display:none;">
-        <label class="field-label">$ Margin ($/hr)</label>
-        <input type="number" id="calcDollarMargin" class="calc-editable" value="6.50" min="0" step="0.01">
-      </div>
-
-      <div class="field calc-multiple-only">
-        <label class="field-label">Multiple</label>
-        <input type="number" id="calcMultiple" class="calc-editable" value="1.4" min="1" step="0.01">
-      </div>
-
-      <div class="breakdown-list" style="margin-top:18px;">
-        <div class="breakdown-row"><span>Base pay</span><span class="amt" id="calcBaseOut">$0.00</span></div>
-        <div class="breakdown-row"><span>Super (<span id="calcSuperPct">12.0</span>%)</span><span class="amt" id="calcSuperOut">$0.00</span></div>
-        <div class="breakdown-row"><span>Base + Super</span><span class="amt" id="calcBaseSuperOut">$0.00</span></div>
-        <div class="breakdown-row"><span>Payroll tax (<span id="calcPayrollPct">5.85</span>%)</span><span class="amt" id="calcPayrollOut">$0.00</span></div>
-        <div class="breakdown-row"><span>Workers comp (<span id="calcWorkersPctOut">5.0</span>%)</span><span class="amt" id="calcWorkersOut">$0.00</span></div>
-        <div class="breakdown-row"><span>Insurance (<span id="calcInsurancePctOut">1.0</span>%)</span><span class="amt" id="calcInsuranceOut">$0.00</span></div>
-        <div class="breakdown-row"><span>Margin (<span id="calcMarginPctOut">0.0</span>%)</span><span class="amt" id="calcMarginOut">$0.00</span></div>
-      </div>
-
-      <div class="readout-grid" style="grid-template-columns:1fr;">
-        <div class="readout charge">
-          <div class="rlabel">Charge rate</div>
-          <div class="rvalue" id="calcChargeOut">$0.00</div>
-          <div class="rsub" id="calcChargeSub">per hour</div>
-        </div>
       </div>
     </div>
 
@@ -935,20 +1004,25 @@
   };
 
   var CASUAL_LOADING = 0.25;
-  var SUPER_RATE = 0.12;
-  var WORKCOVER_RATE = 0.01;
-  var PAYROLL_TAX_RATE = 0.0545;
-  var ONCOST_TOTAL = SUPER_RATE + WORKCOVER_RATE + PAYROLL_TAX_RATE;
-  var ORDINARY_HOURS_PER_WEEK = 38;
+  var CALC_SUPER_RATE = 0.12;    // fixed, not editable
+  var STATE_PAYROLL_RATES = { VIC: 0.0585, NSW: 0.0545, QLD: 0.052, SA: 0.0495 };
   var MIN_MARGIN_WARN = 20;
+  // These are NOT legal minimums -- actual WorkCover premiums vary by
+  // state and industry risk classification, set by each state's
+  // WorkCover authority, and this tool has no way to know the real
+  // floor for a specific business. These are just sanity-check
+  // thresholds to nudge a second look when a value looks unusually low
+  // (e.g. a typo, or a deliberate margin adjustment worth double-checking).
+  var WORKCOVER_LOW_THRESHOLD = 1.0;
+  var INSURANCE_LOW_THRESHOLD = 0.5;
 
   // ---------------- Fair Work MAPD sync ----------------
   // Point this at your deployed proxy (see fwc-mapd-proxy.worker.js),
   // never at the FWC API directly -- that requires a server-side key.
   // Leave blank to keep the button disabled with a setup message.
-  var FWC_PROXY_URL = "https://func-awardchecker-prod-ckecfpd2h5g7fvd6.australiaeast-01.azurewebsites.net/api/award-rates"; // relative path works if this file is served from public/ in the same Vercel project as api/award-rates.js
+  var FWC_PROXY_URL = "/api/award-rates"; // relative path works if this file is served from public/ in the same Vercel project as api/award-rates.js
   var FWC_PROXY_TOKEN = ""; // must match PROXY_SHARED_SECRET set in Vercel -- generate one with `openssl rand -hex 24` or a password manager
-  var SHARED_RATES_URL = "https://func-awardchecker-prod-ckecfpd2h5g7fvd6.australiaeast-01.azurewebsites.net/api/synced-rates"; // moved up here -- was previously declared after its first use, leaving it `undefined` on page load
+  var SHARED_RATES_URL = "/api/synced-rates"; // moved up here -- was previously declared after its first use, leaving it `undefined` on page load
 
   var syncRatesBtn = document.getElementById("syncRatesBtn");
   var syncStatus = document.getElementById("syncStatus");
@@ -1137,16 +1211,61 @@
     return rate;
   }
 
-  function costFromPay(pay){ return pay * (1 + ONCOST_TOTAL); }
-  function chargeFromCost(cost, marginPct){
+  // Core pay calculator engine, shared by the ordinary rate and every
+  // penalty rate row. methodValue means different things per method:
+  //   "margin"    -> a flat dollar margin
+  //   "pctmargin" -> a margin percentage OF THE CHARGE RATE (true margin,
+  //                  not mark-up-on-cost -- charge = cost / (1 - pct/100))
+  //   "multiple"  -> a multiple of the pay rate
+  //   "charge"    -> WORKING BACKWARDS: the charge rate itself is given
+  //                  directly (e.g. to match a competitor's quote), and
+  //                  margin is whatever that leaves after fixed cost.
+  //                  Can come out negative -- that's the whole point of
+  //                  this mode, to reveal when a target rate would mean
+  //                  operating at a loss. Pay rate/super/payroll are
+  //                  never touched -- only margin absorbs the difference.
+  function computePayCalc(pay, state, method, workersRatePct, insuranceRatePct, methodValue){
+    var payrollRate = STATE_PAYROLL_RATES[state];
+    var workersRate = workersRatePct / 100;
+    var insuranceRate = insuranceRatePct / 100;
+    var superAmt = pay * CALC_SUPER_RATE;
+    var baseSuper = pay + superAmt;
+    var payrollAmt = baseSuper * payrollRate;
+    var workersAmt = baseSuper * workersRate;
+    var insuranceAmt = baseSuper * insuranceRate;
+    var cost = baseSuper + payrollAmt + workersAmt + insuranceAmt;
+    var marginAmt, chargeRate;
+    if(method === "margin"){
+      marginAmt = methodValue;
+      chargeRate = cost + marginAmt;
+    } else if(method === "pctmargin"){
+      chargeRate = chargeFromCostAndPct(cost, methodValue);
+      marginAmt = chargeRate - cost;
+    } else if(method === "charge"){
+      chargeRate = methodValue;
+      marginAmt = chargeRate - cost;
+    } else {
+      chargeRate = pay * methodValue;
+      marginAmt = chargeRate - cost;
+    }
+    var marginPct = chargeRate > 0 ? (marginAmt / chargeRate) * 100 : 0;
+    return {
+      pay: pay, payrollRate: payrollRate, workersRate: workersRate, insuranceRate: insuranceRate,
+      superAmt: superAmt, baseSuper: baseSuper, payrollAmt: payrollAmt,
+      workersAmt: workersAmt, insuranceAmt: insuranceAmt, cost: cost,
+      marginAmt: marginAmt, chargeRate: chargeRate, marginPct: marginPct
+    };
+  }
+  // For penalty rows: Multiple method extends the same multiple
+  // directly; both margin methods keep the ORDINARY rate's derived
+  // margin PERCENTAGE (not the flat dollar, for $ Margin) so margin
+  // doesn't evaporate at higher penalty multiples -- consistent with
+  // how this worked before the calculator engines were merged.
+  function chargeFromCostAndPct(cost, marginPct){
     var m = marginPct / 100;
     if(m >= 1) m = 0.99;
     return cost / (1 - m);
   }
-  // Primary calculation now: multiplier applied directly to base pay
-  // rate. See the ASSUMPTION note in recalc() if this needs to apply
-  // to cost-to-agency instead once that's confirmed.
-  function chargeFromMultiplier(pay, multiplier){ return pay * multiplier; }
 
   // ---------------- Populate selects ----------------
   function populateAwardSelect(sel){
@@ -1168,13 +1287,45 @@
       sel.appendChild(opt);
     });
   }
+  // Pay Calculator tab uses checkboxes instead of a select, so several
+  // classifications can be picked at once for the comparison table.
+  // First classification is checked by default, matching the old
+  // single-select's default behaviour.
+  function populateClassChecklist(awardKey){
+    var award = AWARDS[awardKey];
+    classChecklist.innerHTML = "";
+    award.classifications.forEach(function(c, idx){
+      var label = document.createElement("label");
+      label.className = "checklist-item";
+      label.innerHTML =
+        "<input type='checkbox' value='" + c.id + "'" + (idx === 0 ? " checked" : "") + ">" +
+        "<span>" + c.label + "</span>" +
+        "<span class='rate'>" + fmt(c.rate) + "/hr</span>";
+      classChecklist.appendChild(label);
+    });
+  }
+  function getSelectedClassIds(){
+    return Array.prototype.map.call(
+      classChecklist.querySelectorAll("input:checked"),
+      function(cb){ return cb.value; }
+    );
+  }
 
   var awardSelect = document.getElementById("awardSelect");
-  var classSelect = document.getElementById("classSelect");
+  var classChecklist = document.getElementById("classChecklist");
   var empTypeSeg = document.getElementById("empTypeSeg");
-  var marginSlider = document.getElementById("marginSlider");
-  var marginValue = document.getElementById("marginValue");
+  var calcStateSeg = document.getElementById("calcStateSeg");
+  var calcMethodSeg = document.getElementById("calcMethodSeg");
+  var calcMultiple = document.getElementById("calcMultiple");
+  var calcDollarMargin = document.getElementById("calcDollarMargin");
+  var calcPctMargin = document.getElementById("calcPctMargin");
+  var calcTargetCharge = document.getElementById("calcTargetCharge");
+  var calcWorkersRate = document.getElementById("calcWorkersRate");
+  var calcInsuranceRate = document.getElementById("calcInsuranceRate");
   var marginAlert = document.getElementById("marginAlert");
+  var lossAlert = document.getElementById("lossAlert");
+  var oncostWarn = document.getElementById("oncostWarn");
+  var oncostWarnText = document.getElementById("oncostWarnText");
   var costValue = document.getElementById("costValue");
   var chargeValue = document.getElementById("chargeValue");
   var penaltyBody = document.getElementById("penaltyBody");
@@ -1255,7 +1406,7 @@
   }
 
   // ---------------- Sync log (shared, third tab) ----------------
-  var SYNC_LOG_URL = "https://func-awardchecker-prod-ckecfpd2h5g7fvd6.australiaeast-01.azurewebsites.net/api/sync-log";
+  var SYNC_LOG_URL = "/api/sync-log";
 
   function pushLogEntry(entry){
     fetch(SYNC_LOG_URL, {
@@ -1362,7 +1513,7 @@
   }
 
   populateAwardSelect(awardSelect);
-  populateClassSelect(classSelect, awardSelect.value);
+  populateClassChecklist(awardSelect.value);
 
   // Click-to-reveal help tooltips -- works the same on touch and mouse,
   // unlike hover-based tooltips which don't exist on phones.
@@ -1377,6 +1528,8 @@
   });
 
   var currentEmpType = "permanent";
+  var calcState = "VIC";
+  var calcMethod = "multiple";
 
   empTypeSeg.addEventListener("click", function(e){
     var btn = e.target.closest("button");
@@ -1387,59 +1540,147 @@
     recalc();
   });
 
-  awardSelect.addEventListener("change", function(){
-    populateClassSelect(classSelect, awardSelect.value);
+  calcStateSeg.addEventListener("click", function(e){
+    var btn = e.target.closest("button");
+    if(!btn) return;
+    Array.prototype.forEach.call(calcStateSeg.querySelectorAll("button"), function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+    calcState = btn.getAttribute("data-val");
     recalc();
   });
-  classSelect.addEventListener("change", recalc);
-  marginSlider.addEventListener("input", recalc);
+
+  calcMethodSeg.addEventListener("click", function(e){
+    var btn = e.target.closest("button");
+    if(!btn) return;
+    Array.prototype.forEach.call(calcMethodSeg.querySelectorAll("button"), function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+    calcMethod = btn.getAttribute("data-val");
+    document.querySelectorAll(".calc-margin-only").forEach(function(el){ el.style.display = calcMethod === "margin" ? "" : "none"; });
+    document.querySelectorAll(".calc-multiple-only").forEach(function(el){ el.style.display = calcMethod === "multiple" ? "" : "none"; });
+    document.querySelectorAll(".calc-pctmargin-only").forEach(function(el){ el.style.display = calcMethod === "pctmargin" ? "" : "none"; });
+    document.querySelectorAll(".calc-charge-only").forEach(function(el){ el.style.display = calcMethod === "charge" ? "" : "none"; });
+    recalc();
+  });
+
+  [calcMultiple, calcDollarMargin, calcPctMargin, calcTargetCharge, calcWorkersRate, calcInsuranceRate].forEach(function(el){
+    el.addEventListener("input", recalc);
+  });
+
+  awardSelect.addEventListener("change", function(){
+    populateClassChecklist(awardSelect.value);
+    recalc();
+  });
+  classChecklist.addEventListener("change", recalc);
   clientName.addEventListener("input", recalc);
   agencyName.addEventListener("input", recalc);
 
   function recalc(){
     var award = AWARDS[awardSelect.value];
-    var classId = classSelect.value;
-    var pay = baseRate(award, classId, currentEmpType);
-    var cost = costFromPay(pay);
+    var selectedClassIds = getSelectedClassIds();
 
-    // Margin is the primary control again (slider, 10%-60%). Multiplier
-    // is DERIVED afterwards purely for reference, not the other way
-    // around -- this was flipped for a while but reverted back.
-    var marginPct = parseFloat(marginSlider.value);
-    var charge = chargeFromCost(cost, marginPct);
-    var multiplier = pay > 0 ? (charge / pay) : 0;
+    var workersRatePct = parseFloat(calcWorkersRate.value) || 0;
+    var insuranceRatePct = parseFloat(calcInsuranceRate.value) || 0;
+    var methodValue = calcMethod === "margin" ? (parseFloat(calcDollarMargin.value) || 0)
+      : calcMethod === "pctmargin" ? (parseFloat(calcPctMargin.value) || 0)
+      : calcMethod === "charge" ? (parseFloat(calcTargetCharge.value) || 0)
+      : (parseFloat(calcMultiple.value) || 0);
 
-    document.getElementById("multiplierValue").textContent = multiplier.toFixed(2) + "×";
-    marginValue.textContent = marginPct + "%";
-    if(marginPct < MIN_MARGIN_WARN){
+    // Sanity-check nudge, not a hard limit -- see the threshold
+    // constants' comment for why this can't be a true legal minimum.
+    var lowOncosts = [];
+    if(workersRatePct < WORKCOVER_LOW_THRESHOLD) lowOncosts.push("WorkCover (" + workersRatePct.toFixed(1) + "%)");
+    if(insuranceRatePct < INSURANCE_LOW_THRESHOLD) lowOncosts.push("Insurance (" + insuranceRatePct.toFixed(1) + "%)");
+    if(lowOncosts.length > 0){
+      oncostWarnText.textContent = lowOncosts.join(" and ") + " looks unusually low — worth confirming this matches your actual rate before quoting, rather than an accidental adjustment.";
+      oncostWarn.classList.add("show");
+    } else {
+      oncostWarn.classList.remove("show");
+    }
+
+    if(award.note){
+      awardNote.style.display = "block";
+      awardNote.textContent = award.note;
+    } else {
+      awardNote.style.display = "none";
+    }
+
+    if(selectedClassIds.length > 1){
+      // ---- Multi-classification comparison table ----
+      document.getElementById("singleOutput").style.display = "none";
+      document.getElementById("multiOutput").style.display = "block";
+      document.getElementById("penaltyCard").style.display = "none";
+      document.getElementById("singleQuoteCard").style.display = "none";
+      document.getElementById("multiQuoteCard").style.display = "block";
+
+      buildMultiTable(award, selectedClassIds, workersRatePct, insuranceRatePct, methodValue);
+
+      document.getElementById("qAgencyMulti").textContent = agencyName.value.trim() || "Fuse Recruitment";
+      document.getElementById("qClientMulti").textContent = clientName.value.trim() || "—";
+      document.getElementById("qDateMulti").textContent = new Date().toLocaleDateString("en-AU", {day:"numeric", month:"long", year:"numeric"});
+      document.getElementById("qAwardNameMulti").textContent = award.name;
+      document.getElementById("qClassCountMulti").textContent = selectedClassIds.length + " classifications selected";
+
+      window._fuseState = {
+        multi: true, award: award, classIds: selectedClassIds, empType: currentEmpType,
+        calcState: calcState, calcMethod: calcMethod, workersRatePct: workersRatePct,
+        insuranceRatePct: insuranceRatePct, methodValue: methodValue,
+        agency: agencyName.value.trim() || "Fuse Recruitment",
+        client: clientName.value.trim()
+      };
+      return;
+    }
+
+    // ---- Single classification (unchanged behaviour) ----
+    document.getElementById("singleOutput").style.display = "block";
+    document.getElementById("multiOutput").style.display = "none";
+    document.getElementById("penaltyCard").style.display = "block";
+    document.getElementById("singleQuoteCard").style.display = "block";
+    document.getElementById("multiQuoteCard").style.display = "none";
+
+    var classId = selectedClassIds[0];
+    var pay = baseRate(award, classId, currentEmpType); // already includes +25% casual loading when applicable
+
+    var calc = computePayCalc(pay, calcState, calcMethod, workersRatePct, insuranceRatePct, methodValue);
+
+    if(calc.marginAmt < 0){
+      lossAlert.classList.add("show");
+      marginAlert.classList.remove("show"); // the loss alert supersedes the milder warning
+    } else if(calc.marginPct < MIN_MARGIN_WARN){
+      lossAlert.classList.remove("show");
       marginAlert.classList.add("show");
     } else {
+      lossAlert.classList.remove("show");
       marginAlert.classList.remove("show");
     }
 
-    costValue.textContent = fmt(cost);
-    chargeValue.textContent = fmt(charge);
+    costValue.textContent = fmt(calc.cost);
+    chargeValue.textContent = fmt(calc.chargeRate);
 
-    // Dollar breakdown
-    var superAmt = pay * SUPER_RATE;
-    var workcoverAmt = pay * WORKCOVER_RATE;
-    var payrollAmt = pay * PAYROLL_TAX_RATE;
-    var marginDollar = charge - cost;
+    // Breakdown
+    document.getElementById("bdBaseLabel").textContent = currentEmpType === "casual" ? "Casual Rate" : "Full Time Rate";
     document.getElementById("bdBase").textContent = fmt(pay) + "/hr";
-    document.getElementById("bdSuper").textContent = fmt(superAmt) + "/hr";
-    document.getElementById("bdWorkcover").textContent = fmt(workcoverAmt) + "/hr";
-    document.getElementById("bdPayroll").textContent = fmt(payrollAmt) + "/hr";
-    document.getElementById("bdMarginPct").textContent = marginPct;
-    document.getElementById("bdMarginDollar").textContent = fmt(marginDollar) + "/hr";
+    document.getElementById("bdSuperPct").textContent = (CALC_SUPER_RATE * 100).toFixed(1);
+    document.getElementById("bdSuper").textContent = fmt(calc.superAmt) + "/hr";
+    document.getElementById("bdBaseSuper").textContent = fmt(calc.baseSuper) + "/hr";
+    document.getElementById("bdPayrollPct").textContent = (calc.payrollRate * 100).toFixed(2);
+    document.getElementById("bdPayroll").textContent = fmt(calc.payrollAmt) + "/hr";
+    document.getElementById("bdWorkersPct").textContent = workersRatePct.toFixed(1);
+    document.getElementById("bdWorkcover").textContent = fmt(calc.workersAmt) + "/hr";
+    document.getElementById("bdInsurancePct").textContent = insuranceRatePct.toFixed(1);
+    document.getElementById("bdInsurance").textContent = fmt(calc.insuranceAmt) + "/hr";
+    document.getElementById("bdMarginPct").textContent = calc.marginPct.toFixed(1);
+    document.getElementById("bdMarginDollar").textContent = fmt(calc.marginAmt) + "/hr";
 
-    // Penalty table -- same margin percentage applied to each
-    // penalty-loaded pay rate's cost, consistent with the ordinary rate.
+    // Penalty table -- Multiple method extends the same multiple to
+    // each penalty rate; both margin methods keep the ORDINARY rate's
+    // margin PERCENTAGE (not the flat dollar, for $ Margin) so margin
+    // doesn't evaporate at higher penalty multiples.
     penaltyAwardName.textContent = award.name;
     penaltyBody.innerHTML = "";
     award.penalties.forEach(function(p){
       var pPay = pay * p.mult;
-      var pCost = costFromPay(pPay);
-      var pCharge = chargeFromCost(pCost, marginPct);
+      var pCalc = computePayCalc(pPay, calcState, calcMethod, workersRatePct, insuranceRatePct, methodValue);
+      var pCharge = calcMethod === "multiple" ? pCalc.chargeRate : chargeFromCostAndPct(pCalc.cost, calc.marginPct);
       var tr = document.createElement("tr");
       tr.innerHTML =
         "<td>" + p.label + "</td>" +
@@ -1448,13 +1689,6 @@
         "<td class='num'>" + fmt(pCharge) + "</td>";
       penaltyBody.appendChild(tr);
     });
-
-    if(award.note){
-      awardNote.style.display = "block";
-      awardNote.textContent = award.note;
-    } else {
-      awardNote.style.display = "none";
-    }
 
     // Quote card
     var cls = award.classifications.filter(function(c){ return c.id === classId; })[0];
@@ -1465,18 +1699,61 @@
     document.getElementById("qAwardCode").textContent = award.code;
     document.getElementById("qClassLabel").textContent = cls ? cls.label : "—";
     document.getElementById("qEmpType").textContent = currentEmpType === "casual" ? "Casual (+25% loading)" : "Permanent / Full-time";
-    document.getElementById("qCost").textContent = fmt(cost);
-    document.getElementById("qCharge").textContent = fmt(charge);
+    document.getElementById("qCost").textContent = fmt(calc.cost);
+    document.getElementById("qCharge").textContent = fmt(calc.chargeRate);
 
     window._fuseState = {
       award: award, classId: classId, cls: cls, empType: currentEmpType,
-      pay: pay, cost: cost, charge: charge, marginPct: marginPct, multiplier: multiplier,
+      pay: pay, cost: calc.cost, charge: calc.chargeRate, marginPct: calc.marginPct,
+      calcState: calcState, calcMethod: calcMethod, workersRatePct: workersRatePct,
+      insuranceRatePct: insuranceRatePct, methodValue: methodValue,
       agency: agencyName.value.trim() || "Fuse Recruitment",
       client: clientName.value.trim()
     };
   }
 
   recalc();
+
+  // Builds the comparison table shown when 2+ classifications are
+  // ticked -- one row per classification, with Full Time/Casual Rate,
+  // Cost, Charge, Margin%, and every one of the award's penalty rates
+  // as extra columns. Same calculator settings (state, method, etc.)
+  // apply to every row.
+  function buildMultiTable(award, classIds, workersRatePct, insuranceRatePct, methodValue){
+    var head = document.getElementById("multiTableHead");
+    var body = document.getElementById("multiTableBody");
+    var baseLabel = currentEmpType === "casual" ? "Casual Rate" : "Full Time Rate";
+
+    var headerCells = ["Classification", baseLabel, "Cost/hr", "Charge/hr", "Margin %"]
+      .concat(award.penalties.map(function(p){ return p.label + " (" + p.mult + "×)"; }));
+    head.innerHTML = headerCells.map(function(h){ return "<th>" + h + "</th>"; }).join("");
+
+    body.innerHTML = "";
+    classIds.forEach(function(classId){
+      var cls = award.classifications.filter(function(c){ return c.id === classId; })[0];
+      if(!cls) return;
+      var pay = baseRate(award, classId, currentEmpType);
+      var calc = computePayCalc(pay, calcState, calcMethod, workersRatePct, insuranceRatePct, methodValue);
+
+      var cells = [
+        "<td>" + cls.label + "</td>",
+        "<td>" + fmt(pay) + "</td>",
+        "<td>" + fmt(calc.cost) + "</td>",
+        "<td class='charge'>" + fmt(calc.chargeRate) + "</td>",
+        "<td>" + calc.marginPct.toFixed(1) + "%</td>"
+      ];
+      award.penalties.forEach(function(p){
+        var pPay = pay * p.mult;
+        var pCalc = computePayCalc(pPay, calcState, calcMethod, workersRatePct, insuranceRatePct, methodValue);
+        var pCharge = calcMethod === "multiple" ? pCalc.chargeRate : chargeFromCostAndPct(pCalc.cost, calc.marginPct);
+        cells.push("<td>" + fmt(pCharge) + "</td>");
+      });
+
+      var tr = document.createElement("tr");
+      tr.innerHTML = cells.join("");
+      body.appendChild(tr);
+    });
+  }
 
   // ---------------- Copy buttons ----------------
   function copyText(text, toastEl){
@@ -1532,20 +1809,24 @@
     var award = AWARDS[awardSelect.value];
 
     var empLabel = s.empType === "casual" ? "Casual (+25%)" : "Permanent/Full-time";
+    var methodLabel = s.calcMethod === "margin" ? ("$ Margin: " + fmt(s.methodValue) + "/hr")
+      : s.calcMethod === "pctmargin" ? ("% Margin: " + s.methodValue.toFixed(1) + "%")
+      : s.calcMethod === "charge" ? ("Target charge: " + fmt(s.methodValue) + "/hr")
+      : ("Multiple: " + s.methodValue.toFixed(2) + "×");
     var headerLines = [
       s.agency + " — Charge Rate Card",
       s.client ? ("Prepared for: " + s.client) : "",
       award.name + " [" + award.code + "]",
       "Classification: " + (s.cls ? s.cls.label : "—") + " · " + empLabel,
-      "Margin: " + s.marginPct + "% (multiplier: " + s.multiplier.toFixed(2) + "×)"
+      "State: " + s.calcState + " · " + methodLabel + " · Margin: " + s.marginPct.toFixed(1) + "%"
     ].filter(Boolean);
 
     // Build the rate rows once, shared by both the plain-text and HTML versions
     var rows = [{ label: "Ordinary time", mult: "1×", charge: s.charge }];
     award.penalties.forEach(function(p){
       var pPay = s.pay * p.mult;
-      var pCost = costFromPay(pPay);
-      var pCharge = chargeFromCost(pCost, s.marginPct);
+      var pCalc = computePayCalc(pPay, s.calcState, s.calcMethod, s.workersRatePct, s.insuranceRatePct, s.methodValue);
+      var pCharge = s.calcMethod === "multiple" ? pCalc.chargeRate : chargeFromCostAndPct(pCalc.cost, s.marginPct);
       rows.push({ label: p.label, mult: p.mult + "×", charge: pCharge });
     });
 
@@ -1559,21 +1840,29 @@
 
     // Rich HTML version: an actual <table>, inline-styled since pasted
     // content only respects inline styles, not linked stylesheets.
+    // IMPORTANT: color is set explicitly on every cell, not just
+    // inherited from the wrapping <div> -- some email clients (Gmail,
+    // Outlook) process pasted fragments in isolation and drop inherited
+    // styles. The header uses a LIGHT background with DARK text rather
+    // than a dark background with white text, because those same
+    // clients often strip background colors but keep text colors --
+    // dark-bg-white-text becomes invisible white-on-white if that
+    // happens; light-bg-dark-text stays readable either way.
     var htmlRows = rows.map(function(r){
       return "<tr>" +
-        "<td style='padding:6px 10px;border:1px solid #ccc;'>" + r.label + "</td>" +
-        "<td style='padding:6px 10px;border:1px solid #ccc;text-align:right;'>" + r.mult + "</td>" +
-        "<td style='padding:6px 10px;border:1px solid #ccc;text-align:right;font-family:monospace;'>" + fmt(r.charge) + "</td>" +
+        "<td style='padding:6px 10px;border:1px solid #ccc;color:#151A36;'>" + r.label + "</td>" +
+        "<td style='padding:6px 10px;border:1px solid #ccc;text-align:right;color:#151A36;'>" + r.mult + "</td>" +
+        "<td style='padding:6px 10px;border:1px solid #ccc;text-align:right;font-family:monospace;color:#151A36;'>" + fmt(r.charge) + "</td>" +
       "</tr>";
     }).join("");
     var htmlText =
       "<div style='font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#151A36;'>" +
-        headerLines.map(function(l, i){ return i === 0 ? "<p style='margin:0 0 6px;font-weight:bold;'>" + l + "</p>" : "<p style='margin:0 0 4px;'>" + l + "</p>"; }).join("") +
+        headerLines.map(function(l, i){ return i === 0 ? "<p style='margin:0 0 6px;font-weight:bold;color:#151A36;'>" + l + "</p>" : "<p style='margin:0 0 4px;color:#151A36;'>" + l + "</p>"; }).join("") +
         "<table style='border-collapse:collapse;margin-top:10px;' cellpadding='0' cellspacing='0'>" +
-          "<tr style='background:#151A36;color:#fff;'>" +
-            "<th style='padding:6px 10px;border:1px solid #ccc;text-align:left;'>Rate type</th>" +
-            "<th style='padding:6px 10px;border:1px solid #ccc;text-align:right;'>Multiplier</th>" +
-            "<th style='padding:6px 10px;border:1px solid #ccc;text-align:right;'>Charge/hr</th>" +
+          "<tr>" +
+            "<th style='padding:6px 10px;border:1px solid #ccc;text-align:left;background:#E6EFF3;color:#151A36;'>Rate type</th>" +
+            "<th style='padding:6px 10px;border:1px solid #ccc;text-align:right;background:#E6EFF3;color:#151A36;'>Multiplier</th>" +
+            "<th style='padding:6px 10px;border:1px solid #ccc;text-align:right;background:#E6EFF3;color:#151A36;'>Charge/hr</th>" +
           "</tr>" +
           htmlRows +
         "</table>" +
@@ -1582,8 +1871,113 @@
     copyRichText(plainText, htmlText, document.getElementById("copyRatesToast"));
   });
 
+  document.getElementById("copyMultiBtn").addEventListener("click", function(){
+    var s = window._fuseState;
+    if(!s || !s.multi) return;
+    var award = s.award;
+    var baseLabel = s.empType === "casual" ? "Casual Rate" : "Full Time Rate";
+    var methodLabel = s.calcMethod === "margin" ? ("$ Margin: " + fmt(s.methodValue) + "/hr")
+      : s.calcMethod === "pctmargin" ? ("% Margin: " + s.methodValue.toFixed(1) + "%")
+      : s.calcMethod === "charge" ? ("Target charge: " + fmt(s.methodValue) + "/hr")
+      : ("Multiple: " + s.methodValue.toFixed(2) + "×");
+    var empLabel = s.empType === "casual" ? "Casual (+25%)" : "Permanent/Full-time";
+    var headerLines = [
+      s.agency + " — Full Rate Card",
+      s.client ? ("Prepared for: " + s.client) : "",
+      award.name + " [" + award.code + "]",
+      empLabel + " · State: " + s.calcState + " · " + methodLabel
+    ].filter(Boolean);
+
+    var colLabels = ["Classification", baseLabel, "Cost/hr", "Charge/hr", "Margin %"]
+      .concat(award.penalties.map(function(p){ return p.label + " (" + p.mult + "×)"; }));
+
+    var dataRows = s.classIds.map(function(classId){
+      var cls = award.classifications.filter(function(c){ return c.id === classId; })[0];
+      var pay = baseRate(award, classId, s.empType);
+      var calc = computePayCalc(pay, s.calcState, s.calcMethod, s.workersRatePct, s.insuranceRatePct, s.methodValue);
+      var row = [cls ? cls.label : classId, fmt(pay), fmt(calc.cost), fmt(calc.chargeRate), calc.marginPct.toFixed(1) + "%"];
+      award.penalties.forEach(function(p){
+        var pPay = pay * p.mult;
+        var pCalc = computePayCalc(pPay, s.calcState, s.calcMethod, s.workersRatePct, s.insuranceRatePct, s.methodValue);
+        var pCharge = s.calcMethod === "multiple" ? pCalc.chargeRate : chargeFromCostAndPct(pCalc.cost, calc.marginPct);
+        row.push(fmt(pCharge));
+      });
+      return row;
+    });
+
+    // Plain-text fallback: tab-separated, lands as columns in a spreadsheet.
+    var plainLines = headerLines.concat(["", colLabels.join("\t")]);
+    dataRows.forEach(function(row){ plainLines.push(row.join("\t")); });
+    var plainText = plainLines.join("\n");
+
+    // Rich HTML version: a real table, inline-styled for pasting into
+    // Word/Gmail/Outlook/Docs/Slack. Color set explicitly on every
+    // cell (not inherited) and header uses a light background with
+    // dark text -- see the comment on the single-classification copy
+    // handler above for why (some email clients strip backgrounds but
+    // keep text colors, which would make white-on-dark invisible).
+    var htmlHeadCells = colLabels.map(function(h){
+      return "<th style='padding:6px 10px;border:1px solid #ccc;text-align:right;background:#E6EFF3;color:#151A36;'>" + h + "</th>";
+    }).join("");
+    var htmlBodyRows = dataRows.map(function(row){
+      return "<tr>" + row.map(function(cell, i){
+        var align = i === 0 ? "left" : "right";
+        return "<td style='padding:6px 10px;border:1px solid #ccc;text-align:" + align + ";font-family:monospace;color:#151A36;'>" + cell + "</td>";
+      }).join("") + "</tr>";
+    }).join("");
+    var htmlText =
+      "<div style='font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#151A36;'>" +
+        headerLines.map(function(l, i){ return i === 0 ? "<p style='margin:0 0 6px;font-weight:bold;color:#151A36;'>" + l + "</p>" : "<p style='margin:0 0 4px;color:#151A36;'>" + l + "</p>"; }).join("") +
+        "<table style='border-collapse:collapse;margin-top:10px;' cellpadding='0' cellspacing='0'>" +
+          "<tr>" + htmlHeadCells + "</tr>" +
+          htmlBodyRows +
+        "</table>" +
+      "</div>";
+
+    copyRichText(plainText, htmlText, document.getElementById("copyMultiToast"));
+  });
+
   // ---------------- Tabs ----------------
   var tabbtns = document.querySelectorAll(".tabbtn");
+  var RATE_CARD_LOCK_KEY = "fuseRateCardUnlocked";
+  var VERIFY_PASSWORD_URL = "/api/verify-ratecard-password";
+
+  // ---------------- Rate Card password lock (soft lock) ----------------
+  // Honest limitation: since every tab lives in this one page (no
+  // separate server route per tab), this only gates whether the tab's
+  // content is SHOWN -- it stops casual clicking-in, but someone with
+  // dev tools open could bypass it. That's an acceptable trade-off here
+  // since nothing genuinely secret sits behind it (award rates are
+  // public Fair Work data) -- this is about limiting casual access to
+  // the pricing/margin process, not protecting a secret at rest.
+  //
+  // The actual password comparison happens server-side (see
+  // api/verify-ratecard-password.js), reading RATE_CARD_PASSWORD from
+  // Vercel's environment variables -- the real password never ships in
+  // this file or reaches the browser in plain form.
+
+  function isRateCardUnlocked(){
+    try{ return sessionStorage.getItem(RATE_CARD_LOCK_KEY) === "yes"; }catch(e){ return false; }
+  }
+  function markRateCardUnlocked(){
+    try{ sessionStorage.setItem(RATE_CARD_LOCK_KEY, "yes"); }catch(e){}
+  }
+
+  var rateCardLock = document.getElementById("rateCardLock");
+  var lockPasswordInput = document.getElementById("lockPasswordInput");
+  var lockError = document.getElementById("lockError");
+  var lockSubmitBtn = document.getElementById("lockSubmitBtn");
+  var pendingTabBtn = null; // the tab button click we'll complete once unlocked
+
+  function showRateCardLock(){
+    rateCardLock.style.display = "flex";
+    lockError.style.display = "none";
+    lockPasswordInput.value = "";
+    setTimeout(function(){ lockPasswordInput.focus(); }, 50);
+  }
+  function hideRateCardLock(){
+    rateCardLock.style.display = "none";
+  }
   function activateTab(btn){
     tabbtns.forEach(function(b){ b.classList.remove("active"); });
     btn.classList.add("active");
@@ -1594,7 +1988,59 @@
     }
   }
 
-  tabbtns.forEach(function(btn){ btn.addEventListener("click", function(){ activateTab(btn); }); });  document.getElementById("refreshLogBtn").addEventListener("click", loadSyncLog);
+  function showLockError(message){
+    lockError.textContent = message;
+    lockError.style.display = "block";
+    lockPasswordInput.value = "";
+    lockPasswordInput.focus();
+  }
+
+  function attemptUnlock(){
+    var entered = lockPasswordInput.value;
+    lockSubmitBtn.disabled = true;
+    lockSubmitBtn.textContent = "Checking…";
+    fetch(VERIFY_PASSWORD_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: entered })
+    })
+      .then(function(res){ return res.json().then(function(body){ return { status: res.status, body: body }; }); })
+      .then(function(result){
+        lockSubmitBtn.disabled = false;
+        lockSubmitBtn.textContent = "Unlock";
+        if(result.body.ok){
+          markRateCardUnlocked();
+          hideRateCardLock();
+          if(pendingTabBtn){ activateTab(pendingTabBtn); pendingTabBtn = null; }
+        } else if(result.body.error){
+          showLockError("Couldn't check the password just now (" + result.body.error + ").");
+        } else {
+          showLockError("Incorrect password — try again.");
+        }
+      })
+      .catch(function(e){
+        lockSubmitBtn.disabled = false;
+        lockSubmitBtn.textContent = "Unlock";
+        showLockError("Couldn't reach the server to check the password. Check your connection and try again.");
+      });
+  }
+  lockSubmitBtn.addEventListener("click", attemptUnlock);
+  lockPasswordInput.addEventListener("keydown", function(e){
+    if(e.key === "Enter") attemptUnlock();
+  });
+
+  tabbtns.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      if(btn.getAttribute("data-tab") === "ratecard" && !isRateCardUnlocked()){
+        pendingTabBtn = btn;
+        showRateCardLock();
+        return;
+      }
+      activateTab(btn);
+    });
+  });
+
+  document.getElementById("refreshLogBtn").addEventListener("click", loadSyncLog);
 
   // ---------------- Award Check tab ----------------
   var acAwardSelect = document.getElementById("acAwardSelect");
@@ -1672,98 +2118,6 @@
       }
     }catch(e){}
   });
-
-  // ---------------- Calculator tab (state-based, from reference spreadsheet) ----------------
-  // Two independent methods, exactly matching the reference workbook:
-  //  - "$ Margin": you set a flat dollar profit; charge rate is built up
-  //    from cost (base+super+payroll+workers+insurance) plus that margin.
-  //  - "Multiple": you set a multiple of base pay; charge rate = base pay
-  //    x multiple directly, and margin is whatever's left over after
-  //    cost. NOTE: insurance is NOT included in the Multiple method's
-  //    cost or margin calc -- that's carried over exactly as the
-  //    reference spreadsheet does it (Insurance was hardcoded to 0 and
-  //    not linked to the $ Margin method's insurance rate), not
-  //    something introduced here. Worth confirming that's intentional.
-  var STATE_PAYROLL_RATES = { VIC: 0.0585, NSW: 0.0545, QLD: 0.052, SA: 0.0495 };
-
-  var CALC_SUPER_RATE = 0.12;   // fixed, not editable
-  var CALC_INSURANCE_RATE = 0.01; // fixed, not editable -- applies the same in both the $ Margin and Multiple methods
-  var STATE_PAYROLL_RATES = { VIC: 0.0585, NSW: 0.0545, QLD: 0.052, SA: 0.0495 };
-
-  var calcState = "VIC";
-  var calcMethod = "multiple";
-
-  var calcStateSeg = document.getElementById("calcStateSeg");
-  var calcMethodSeg = document.getElementById("calcMethodSeg");
-  var calcBasePay = document.getElementById("calcBasePay");
-  var calcWorkersRate = document.getElementById("calcWorkersRate");
-  var calcDollarMargin = document.getElementById("calcDollarMargin");
-  var calcMultiple = document.getElementById("calcMultiple");
-
-  calcStateSeg.addEventListener("click", function(e){
-    var btn = e.target.closest("button");
-    if(!btn) return;
-    Array.prototype.forEach.call(calcStateSeg.querySelectorAll("button"), function(b){ b.classList.remove("active"); });
-    btn.classList.add("active");
-    calcState = btn.getAttribute("data-val");
-    recalcCalculator();
-  });
-
-  calcMethodSeg.addEventListener("click", function(e){
-    var btn = e.target.closest("button");
-    if(!btn) return;
-    Array.prototype.forEach.call(calcMethodSeg.querySelectorAll("button"), function(b){ b.classList.remove("active"); });
-    btn.classList.add("active");
-    calcMethod = btn.getAttribute("data-val");
-    document.querySelectorAll(".calc-margin-only").forEach(function(el){ el.style.display = calcMethod === "margin" ? "" : "none"; });
-    document.querySelectorAll(".calc-multiple-only").forEach(function(el){ el.style.display = calcMethod === "multiple" ? "" : "none"; });
-    recalcCalculator();
-  });
-
-  [calcBasePay, calcWorkersRate, calcDollarMargin, calcMultiple].forEach(function(el){
-    el.addEventListener("input", recalcCalculator);
-  });
-
-  function recalcCalculator(){
-    var basePay = parseFloat(calcBasePay.value) || 0;
-    var workersRate = (parseFloat(calcWorkersRate.value) || 0) / 100;
-    var payrollRate = STATE_PAYROLL_RATES[calcState];
-
-    var superAmt = basePay * CALC_SUPER_RATE;
-    var baseSuper = basePay + superAmt;
-    var payrollAmt = baseSuper * payrollRate;
-    var workersAmt = baseSuper * workersRate;
-    var insuranceAmt = baseSuper * CALC_INSURANCE_RATE; // applies the same in both methods
-    var marginAmt, chargeRate;
-
-    if(calcMethod === "margin"){
-      marginAmt = parseFloat(calcDollarMargin.value) || 0;
-      chargeRate = baseSuper + payrollAmt + workersAmt + insuranceAmt + marginAmt;
-    } else {
-      var multiple = parseFloat(calcMultiple.value) || 0;
-      chargeRate = basePay * multiple;
-      marginAmt = chargeRate - baseSuper - payrollAmt - workersAmt - insuranceAmt;
-    }
-    document.getElementById("calcInsurancePctOut").textContent = (CALC_INSURANCE_RATE * 100).toFixed(1);
-
-    var marginPct = chargeRate > 0 ? (marginAmt / chargeRate) * 100 : 0;
-
-    document.getElementById("calcBaseOut").textContent = fmt(basePay);
-    document.getElementById("calcSuperPct").textContent = (CALC_SUPER_RATE * 100).toFixed(1);
-    document.getElementById("calcSuperOut").textContent = fmt(superAmt);
-    document.getElementById("calcBaseSuperOut").textContent = fmt(baseSuper);
-    document.getElementById("calcPayrollPct").textContent = (payrollRate * 100).toFixed(2);
-    document.getElementById("calcPayrollOut").textContent = fmt(payrollAmt);
-    document.getElementById("calcWorkersPctOut").textContent = (workersRate * 100).toFixed(1);
-    document.getElementById("calcWorkersOut").textContent = fmt(workersAmt);
-    document.getElementById("calcInsuranceOut").textContent = fmt(insuranceAmt);
-    document.getElementById("calcMarginPctOut").textContent = marginPct.toFixed(1);
-    document.getElementById("calcMarginOut").textContent = fmt(marginAmt);
-    document.getElementById("calcChargeOut").textContent = fmt(chargeRate);
-    document.getElementById("calcChargeSub").textContent = "per hour · " + calcState + " · " + (calcMethod === "margin" ? "$ Margin method" : "Multiple method");
-  }
-
-  recalcCalculator();
 
 })();
 </script>
