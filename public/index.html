@@ -1020,9 +1020,9 @@
   // Point this at your deployed proxy (see fwc-mapd-proxy.worker.js),
   // never at the FWC API directly -- that requires a server-side key.
   // Leave blank to keep the button disabled with a setup message.
-  var FWC_PROXY_URL = "/api/award-rates"; // relative path works if this file is served from public/ in the same Vercel project as api/award-rates.js
+  var FWC_PROXY_URL = "https://func-awardchecker-prod-ckecfpd2h5g7fvd6.australiaeast-01.azurewebsites.net/api/award-rates"; // absolute URL -- the API is deployed as a separate standalone Azure Function App, not co-located with this static site, so a relative path won't resolve correctly
   var FWC_PROXY_TOKEN = ""; // must match PROXY_SHARED_SECRET set in Vercel -- generate one with `openssl rand -hex 24` or a password manager
-  var SHARED_RATES_URL = "/api/synced-rates"; // moved up here -- was previously declared after its first use, leaving it `undefined` on page load
+  var SHARED_RATES_URL = "https://func-awardchecker-prod-ckecfpd2h5g7fvd6.australiaeast-01.azurewebsites.net/api/synced-rates"; // moved up here -- was previously declared after its first use, leaving it `undefined` on page load
 
   var syncRatesBtn = document.getElementById("syncRatesBtn");
   var syncStatus = document.getElementById("syncStatus");
@@ -1406,7 +1406,7 @@
   }
 
   // ---------------- Sync log (shared, third tab) ----------------
-  var SYNC_LOG_URL = "/api/sync-log";
+  var SYNC_LOG_URL = "https://func-awardchecker-prod-ckecfpd2h5g7fvd6.australiaeast-01.azurewebsites.net/api/sync-log";
 
   function pushLogEntry(entry){
     fetch(SYNC_LOG_URL, {
@@ -1606,6 +1606,13 @@
 
     if(selectedClassIds.length > 1){
       // ---- Multi-classification comparison table ----
+      // A single margin%/loss alert doesn't make sense here since each
+      // row can have a different margin -- hide both rather than leave
+      // them frozen in whatever state the last single-classification
+      // calculation left them in.
+      marginAlert.classList.remove("show");
+      lossAlert.classList.remove("show");
+
       document.getElementById("singleOutput").style.display = "none";
       document.getElementById("multiOutput").style.display = "block";
       document.getElementById("penaltyCard").style.display = "none";
@@ -1940,7 +1947,7 @@
   // ---------------- Tabs ----------------
   var tabbtns = document.querySelectorAll(".tabbtn");
   var RATE_CARD_LOCK_KEY = "fuseRateCardUnlocked";
-  var VERIFY_PASSWORD_URL = "/api/verify-ratecard-password";
+  var VERIFY_PASSWORD_URL = "/api/verify-ratecard-password"; // UNCONFIRMED -- this endpoint didn't exist yet in the last known-working Azure snapshot, so unlike FWC_PROXY_URL/SHARED_RATES_URL/SYNC_LOG_URL above, this hasn't been verified against your actual Function App. If it 404s, it likely needs the same absolute https://func-awardchecker-prod-....azurewebsites.net/api/... treatment -- confirm whether verify-ratecard-password.js was deployed to that same Function App.
 
   // ---------------- Rate Card password lock (soft lock) ----------------
   // Honest limitation: since every tab lives in this one page (no
