@@ -2,20 +2,44 @@
 <html lang="en-AU">
 <head>
 <!-- Access gate: skip when embedded (e.g. Bullhorn custom tab, already access-controlled there);
-       require Microsoft sign-in only for direct/top-level access. -->
+       require Microsoft sign-in only for direct/top-level access, and only accept Fuse
+       Recruitment accounts (@fuserecruitment.com) -- see Award-Checker-Handover.docx,
+       Section 4.1. Static Web Apps' "Simple" auth mode accepts any Microsoft account, so
+       the domain check has to happen here rather than at the platform level. -->
   <style>html{visibility:hidden}</style>
 <script>
   (function(){
+      var FUSE_DOMAIN = 'fuserecruitment.com';
       function reveal(){ document.documentElement.style.setProperty('visibility','visible','important'); }
+      function isFuseAccount(principal){
+            var email = (principal && principal.userDetails || '').toLowerCase();
+            return email.split('@').pop() === FUSE_DOMAIN;
+      }
+      function showAccessDenied(email){
+            document.documentElement.style.setProperty('visibility','visible','important');
+            var switchAccountUrl = '/.auth/logout?post_logout_redirect_uri=' +
+                  encodeURIComponent('/.auth/login/aad?post_login_redirect_uri=' +
+                        encodeURIComponent(window.location.pathname + window.location.search));
+            document.body.innerHTML =
+                  '<div style="font-family:sans-serif;max-width:480px;margin:15vh auto;text-align:center;padding:0 24px;color:#1a1a1a;">' +
+                  '<h1 style="font-size:20px;margin-bottom:12px;">Access restricted to Fuse accounts</h1>' +
+                  '<p style="line-height:1.5;">This tool is only available to Fuse Recruitment staff. ' +
+                  (email ? ('You&#39;re signed in as <strong>' + email + '</strong>, which isn&#39;t a Fuse account.') : 'The signed-in account isn&#39;t a Fuse account.') +
+                  '</p>' +
+                  '<p><a href="' + switchAccountUrl + '">Sign in with a different account</a></p>' +
+                  '</div>';
+      }
       var framed = false;
       try { framed = window.self !== window.top; } catch(e) { framed = true; }
       if (framed) { reveal(); return; }
       fetch('/.auth/me').then(function(r){ return r.json(); }).then(function(data){
             var principal = data && data.clientPrincipal;
-            if (principal) { reveal(); }
-            else {
+            if (!principal) {
                     window.location.href = '/.auth/login/aad?post_login_redirect_uri=' + encodeURIComponent(window.location.pathname + window.location.search);
+                    return;
             }
+            if (isFuseAccount(principal)) { reveal(); }
+            else { showAccessDenied(principal.userDetails); }
       }).catch(function(){ reveal(); });
   })();
 </script>
