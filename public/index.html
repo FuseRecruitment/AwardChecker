@@ -51,12 +51,14 @@
   :root{
     --ink:#151A36;
     --ink-2:#1F2547;
+    --paper:#FFFFFF;
     --surface:#E6EFF3;
     --card:#FFFFFF;
     --line:#D6E4EA;
     --muted:#55606E;
     --spark:#009CDD;
     --spark-2:#A2C8D8;
+    --spark-dark:#151A36;
     --good:#137A3F;
     --good-bg:#EAF7EF;
     --bad:#C41E3A;
@@ -516,7 +518,6 @@
 </head>
 <body>
 
-<<<<<<< Updated upstream
 <div class="lock-overlay" id="rateCardLock" style="display:none;">
   <div class="lock-box">
     <div class="lock-icon">🔒</div>
@@ -528,8 +529,6 @@
   </div>
 </div>
 
-=======
->>>>>>> Stashed changes
 <div class="app-shell">
 <nav class="side-tabs">
 <div class="side-brand">
@@ -544,13 +543,8 @@
   </div>
 </div>
 <div class="side-divider"></div>
-<<<<<<< Updated upstream
   <button class="tabbtn active" data-tab="ratecard" id="tabbtn-ratecard"><span class="dot"></span>Pay Calculator</button>
   <button class="tabbtn" data-tab="awardcheck" id="tabbtn-awardcheck"><span class="dot"></span>Award Check</button>
-=======
-  <button class="tabbtn active" data-tab="ratecard"><span class="dot"></span>Pay Calculator</button>
-  <button class="tabbtn" data-tab="awardcheck"><span class="dot"></span>Award Check</button>
->>>>>>> Stashed changes
   <div class="side-divider" style="margin-top:auto;"></div>
   <div class="sync-row" style="padding:0 16px;">
     <button class="sync-btn" id="syncRatesBtn">
@@ -559,7 +553,7 @@
     </button>
     <div class="sync-status" id="syncStatus">Using built-in rates — not yet synced with Fair Work</div>
   </div>
-  <button class="tabbtn" data-tab="synclog" style="margin-bottom:10px;"><span class="dot"></span>Sync Log</button>
+  <button class="tabbtn" data-tab="synclog" id="tabbtn-synclog" style="margin-bottom:10px;"><span class="dot"></span>Sync Log</button>
 </nav>
 <div class="app-content">
 <main>
@@ -704,11 +698,7 @@
 
       <div id="multiOutput" style="display:none;">
         <div class="multi-table-wrap">
-<<<<<<< Updated upstream
           <table class="multi-table" id="multiTable">
-=======
-          <table class="multi-table">
->>>>>>> Stashed changes
             <thead><tr id="multiTableHead"></tr></thead>
             <tbody id="multiTableBody"></tbody>
           </table>
@@ -2005,7 +1995,6 @@
     }
   }
 
-<<<<<<< Updated upstream
   function showLockError(message){
     lockError.textContent = message;
     lockError.style.display = "block";
@@ -2056,10 +2045,6 @@
       }
       activateTab(btn);
     });
-=======
-  tabbtns.forEach(function(btn){
-    btn.addEventListener("click", function(){ activateTab(btn); });
->>>>>>> Stashed changes
   });
 
   document.getElementById("refreshLogBtn").addEventListener("click", loadSyncLog);
