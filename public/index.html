@@ -482,27 +482,6 @@
     margin-top:18px; line-height:1.6;
   }
 
-  /* ---------- Rate Card lock overlay ---------- */
-  .lock-overlay{
-    position:fixed; inset:0; z-index:500;
-    background:rgba(21,26,54,0.55);
-    display:flex; align-items:center; justify-content:center;
-    padding:20px;
-  }
-  .lock-box{
-    background:#fff; border-radius:16px; padding:28px 24px; max-width:320px; width:100%;
-    text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.3);
-  }
-  .lock-icon{ font-size:28px; margin-bottom:6px; }
-  .lock-box h2{ font-size:16px; font-weight:800; color:var(--ink); margin:0 0 6px; }
-  .lock-box p{ font-size:12.5px; color:var(--muted); margin:0 0 16px; line-height:1.5; }
-  .lock-box input[type=password]{
-    width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:10px;
-    font-size:15px; text-align:center; font-family:var(--sans);
-  }
-  .lock-box input[type=password]:focus{ outline:2px solid var(--spark); outline-offset:1px; border-color:var(--spark); }
-  .lock-error{ color:var(--bad); font-size:12px; font-weight:700; margin-top:8px; }
-
   /* ---------- Mobile-first enhancements for larger viewports ---------- */
   @media (min-width:640px){
     main{ padding:0 20px 28px; }
@@ -517,17 +496,6 @@
 </style>
 </head>
 <body>
-
-<div class="lock-overlay" id="rateCardLock" style="display:none;">
-  <div class="lock-box">
-    <div class="lock-icon">🔒</div>
-    <h2>Rate Card is locked</h2>
-    <p>Enter the password to view charge rates and pricing.</p>
-    <input type="password" id="lockPasswordInput" placeholder="Password" autocomplete="off">
-    <div class="lock-error" id="lockError" style="display:none;">Incorrect password — try again.</div>
-    <button class="primary-btn" id="lockSubmitBtn" style="margin-top:12px;">Unlock</button>
-  </div>
-</div>
 
 <div class="app-shell">
 <nav class="side-tabs">
@@ -1945,46 +1913,14 @@
   });
 
   // ---------------- Tabs ----------------
+  // No password lock here -- access to the whole tool (including this
+  // tab) is already gated by the Microsoft/Entra ID login at the top of
+  // this file, restricted to @fuserecruitment.com accounts. That's the
+  // real access control now; this used to have an additional soft
+  // password lock on just this one tab, which has been removed as
+  // redundant on top of the org-wide login.
   var tabbtns = document.querySelectorAll(".tabbtn");
-  var RATE_CARD_LOCK_KEY = "fuseRateCardUnlocked";
-  var VERIFY_PASSWORD_URL = "/api/verify-ratecard-password"; // UNCONFIRMED -- this endpoint didn't exist yet in the last known-working Azure snapshot, so unlike FWC_PROXY_URL/SHARED_RATES_URL/SYNC_LOG_URL above, this hasn't been verified against your actual Function App. If it 404s, it likely needs the same absolute https://func-awardchecker-prod-....azurewebsites.net/api/... treatment -- confirm whether verify-ratecard-password.js was deployed to that same Function App.
 
-  // ---------------- Rate Card password lock (soft lock) ----------------
-  // Honest limitation: since every tab lives in this one page (no
-  // separate server route per tab), this only gates whether the tab's
-  // content is SHOWN -- it stops casual clicking-in, but someone with
-  // dev tools open could bypass it. That's an acceptable trade-off here
-  // since nothing genuinely secret sits behind it (award rates are
-  // public Fair Work data) -- this is about limiting casual access to
-  // the pricing/margin process, not protecting a secret at rest.
-  //
-  // The actual password comparison happens server-side (see
-  // api/verify-ratecard-password.js), reading RATE_CARD_PASSWORD from
-  // Vercel's environment variables -- the real password never ships in
-  // this file or reaches the browser in plain form.
-
-  function isRateCardUnlocked(){
-    try{ return sessionStorage.getItem(RATE_CARD_LOCK_KEY) === "yes"; }catch(e){ return false; }
-  }
-  function markRateCardUnlocked(){
-    try{ sessionStorage.setItem(RATE_CARD_LOCK_KEY, "yes"); }catch(e){}
-  }
-
-  var rateCardLock = document.getElementById("rateCardLock");
-  var lockPasswordInput = document.getElementById("lockPasswordInput");
-  var lockError = document.getElementById("lockError");
-  var lockSubmitBtn = document.getElementById("lockSubmitBtn");
-  var pendingTabBtn = null; // the tab button click we'll complete once unlocked
-
-  function showRateCardLock(){
-    rateCardLock.style.display = "flex";
-    lockError.style.display = "none";
-    lockPasswordInput.value = "";
-    setTimeout(function(){ lockPasswordInput.focus(); }, 50);
-  }
-  function hideRateCardLock(){
-    rateCardLock.style.display = "none";
-  }
   function activateTab(btn){
     tabbtns.forEach(function(b){ b.classList.remove("active"); });
     btn.classList.add("active");
@@ -1995,54 +1931,8 @@
     }
   }
 
-  function showLockError(message){
-    lockError.textContent = message;
-    lockError.style.display = "block";
-    lockPasswordInput.value = "";
-    lockPasswordInput.focus();
-  }
-
-  function attemptUnlock(){
-    var entered = lockPasswordInput.value;
-    lockSubmitBtn.disabled = true;
-    lockSubmitBtn.textContent = "Checking…";
-    fetch(VERIFY_PASSWORD_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: entered })
-    })
-      .then(function(res){ return res.json().then(function(body){ return { status: res.status, body: body }; }); })
-      .then(function(result){
-        lockSubmitBtn.disabled = false;
-        lockSubmitBtn.textContent = "Unlock";
-        if(result.body.ok){
-          markRateCardUnlocked();
-          hideRateCardLock();
-          if(pendingTabBtn){ activateTab(pendingTabBtn); pendingTabBtn = null; }
-        } else if(result.body.error){
-          showLockError("Couldn't check the password just now (" + result.body.error + ").");
-        } else {
-          showLockError("Incorrect password — try again.");
-        }
-      })
-      .catch(function(e){
-        lockSubmitBtn.disabled = false;
-        lockSubmitBtn.textContent = "Unlock";
-        showLockError("Couldn't reach the server to check the password. Check your connection and try again.");
-      });
-  }
-  lockSubmitBtn.addEventListener("click", attemptUnlock);
-  lockPasswordInput.addEventListener("keydown", function(e){
-    if(e.key === "Enter") attemptUnlock();
-  });
-
   tabbtns.forEach(function(btn){
     btn.addEventListener("click", function(){
-      if(btn.getAttribute("data-tab") === "ratecard" && !isRateCardUnlocked()){
-        pendingTabBtn = btn;
-        showRateCardLock();
-        return;
-      }
       activateTab(btn);
     });
   });
